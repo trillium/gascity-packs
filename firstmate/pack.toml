@@ -1,5 +1,5 @@
 [pack]
-name = "trillium/firstmate"
+name = "firstmate"
 schema = 2
 version = "0.1.0"
 
@@ -7,7 +7,7 @@ version = "0.1.0"
 # Pinned to a commit; bump deliberately and diff both patched prompts against
 # their upstream versions.
 [imports.gastown]
-source = "https://github.com/gastownhall/gascity-packs/tree/main/gastown"
+source = "https://github.com/gastownhall/gascity-packs.git//gastown"
 version = "sha:0f07496d2fa4fd957a8bea77dcfd653c5d4bcef5"
 
 # Replace imported prompts. Pack-level patches match local agent names and
