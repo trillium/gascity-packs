@@ -61,13 +61,7 @@ blank() {
 }
 
 bare_pr_reference() {
-    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|(^|[[:space:]])[A-Za-z0-9_-]+/[A-Za-z0-9._-]+#[0-9]+([[:space:].,?)]|$)|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
-}
-
-pr_reference_without_https_url() {
-    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)' || return 1
-    printf '%s' "$1" | grep -Eq 'https://[^[:space:]]+' || return 0
-    return 1
+    printf '%s' "$1" | sed 's#https://[^[:space:]]*# #g' | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|(^|[[:space:]])[A-Za-z0-9_-]+/[A-Za-z0-9._-]+#[0-9]+([[:space:].,?)]|$)|(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)'
 }
 
 pr_url_without_https() {
@@ -173,7 +167,7 @@ esac
 for pair in "WHAT:$WHAT" "WHAT YOU DO (--you-do):$YOU_DO" "WHY BLOCKED (--why-blocked):$WHY" "ARTIFACT:$ARTIFACT" "STAKES:$STAKES"; do
     name=${pair%%:*}
     value=${pair#*:}
-    if bare_pr_reference "$value" || pr_reference_without_https_url "$value" || pr_url_without_https "$value"; then
+    if bare_pr_reference "$value" || pr_url_without_https "$value"; then
         die "$name must use a full https URL for every PR reference"
     fi
 done

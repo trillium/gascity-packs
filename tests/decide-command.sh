@@ -42,6 +42,18 @@ expect_refusal() {
     esac
 }
 
+expect_filed() {
+    if output=$(run "$@" 2>&1); then
+        case "$output" in
+            *'DECISION FILED: fm-decision-1'*) ;;
+            *) echo "expected filed decision, got: $output" >&2; exit 1 ;;
+        esac
+    else
+        echo "expected filing, got refusal: $output" >&2
+        exit 1
+    fi
+}
+
 expect_unowned_refusal() {
     if output=$(GC_BIN="$TMPDIR/gc" GC_AGENT='' "$SCRIPT" "$@" 2>&1); then
         echo "expected refusal, got success: $output" >&2
@@ -102,6 +114,28 @@ for field in what you-do why-blocked artifact stakes; do
         stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Pull request #12 remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
+done
+
+for field in what you-do why-blocked artifact stakes; do
+    case "$field" in
+        what) set -- --kind merge --key merge-login-fix --what 'Review PR: 13 and https://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review PR: 13 and https://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review PR: 13 and https://github.com/org/repo/pull/12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'Review PR: 13 and https://github.com/org/repo/pull/12.' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review PR: 13 and https://github.com/org/repo/pull/12 remains unavailable.' ;;
+    esac
+    expect_refusal 'full https URL' "$@"
+done
+
+for field in what you-do why-blocked artifact stakes; do
+    case "$field" in
+        what) set -- --kind merge --key merge-login-fix --what 'Review https://docs.example.com/runbook/#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review https://docs.example.com/runbook/#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review https://docs.example.com/runbook/#12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://docs.example.com/runbook/#12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review https://docs.example.com/runbook/#12 remains unavailable.' ;;
+    esac
+    expect_filed "$@"
 done
 
 for field in what you-do why-blocked artifact stakes; do
