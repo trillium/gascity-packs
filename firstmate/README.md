@@ -6,8 +6,9 @@ Mayor lacks. Those are a communication contract for talking to the human (the
 "captain") and a durable decision ledger.
 
 Everything else is gastown: deacon, boot, witness, refinery, polecats,
-formulas, orders. The captain alone owns merging; the refinery never merges on
-its own.
+formulas, orders. The captain alone owns merging. The patched refinery must
+hold a change until its exact merge decision is resolved with the captain's
+recorded answer.
 
 > **Status: v0.1.0, static checks only.** The files parse and the scripts pass
 > `shellcheck`. The decision commands were exercised against a stand-in for
@@ -31,9 +32,10 @@ Two things to do by hand (both **unverified**, see below):
 1. **Import firstmate instead of gastown, not alongside it.** firstmate
    already imports gastown. Importing both would give you two of every role.
 2. **Set merge ownership before attaching any rig.** The captain is the sole
-   merge owner. The refinery must never merge autonomously: when a change is
-   ready, it routes it through a `merge` decision filed with `gc firstmate
-   decide`, then the captain merges after answering the recorded decision.
+   merge owner. The patched refinery must never merge autonomously: when a
+   change is ready, it stops and files a `merge` decision with `gc firstmate
+   decide`. It resumes only when a resolved decision for that exact change has
+   the captain's recorded answer; the captain performs the merge.
 3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
    come from imports at the rig level:
 
@@ -102,13 +104,17 @@ gc firstmate resolve <id> --answer "merge it"   # record the answer and close
 
 ### Patch, not a full agent
 
-The pack imports gastown and replaces only the Mayor's prompt with a
-pack-level patch:
+The pack imports gastown and replaces the Mayor and refinery prompts with
+pack-level patches:
 
 ```toml
 [[patches.agent]]
 name = "mayor"
 prompt_template = "assets/prompts/mayor.template.md"
+
+[[patches.agent]]
+name = "refinery"
+prompt_template = "assets/prompts/refinery.template.md"
 ```
 
 **Finding: `[[patches.agent]]` can replace a prompt, so no full agent is
@@ -121,20 +127,21 @@ patching pack directory"). Not yet run; see below.
 
 Consequences worth knowing:
 
-- Pack-level patches match the imported agent by its **local** name (`mayor`),
-  not `gastown.mayor`. A missing target is a hard load error.
-- The prompt lives at `assets/prompts/mayor.template.md`, **not**
-  `agents/mayor/`. An `agents/mayor/` directory would define a second mayor
-  that collides with the imported one. The `.template.md` suffix is what makes
-  Gas City execute it as a Go template.
-- The prompt is a copy of gastown's Mayor prompt with firstmate blocks added.
-  A prompt patch replaces the whole prompt, so **upstream Mayor changes do not
-  flow in automatically**. The file's header records the upstream commit; when
-  you bump the pin in `pack.toml`, diff the two by hand.
-- A lighter alternative exists: `inject_fragments_append` could append the two
-  fragments to the untouched upstream prompt, with no fork to maintain. It is
-  not used because that would put the contract at the *end* of the prompt, and
-  the contract has to frame the rest.
+- Pack-level patches match the imported agents by their **local** names
+  (`mayor`, `refinery`), not `gastown.mayor` or `gastown.refinery`. A missing
+  target is a hard load error.
+- The prompts live at `assets/prompts/*.template.md`, **not** under `agents/`.
+  An `agents/refinery/` directory would define a second refinery that collides
+  with the imported one. The `.template.md` suffix is what makes Gas City
+  execute them as Go templates.
+- Both prompts are copies of their gastown prompts with firstmate additions.
+  A prompt patch replaces the whole prompt, so **upstream changes do not flow
+  in automatically**. Each file header records the upstream commit; when you
+  bump the pin in `pack.toml`, diff both by hand.
+- A lighter Mayor-only alternative exists: `inject_fragments_append` could
+  append the two fragments to the untouched upstream Mayor prompt, with no fork
+  to maintain. It is not used because that would put the contract at the *end*
+  of the prompt, and the contract has to frame the rest.
 
 ### Names under the `firstmate` binding
 
@@ -157,6 +164,7 @@ firstmate/
 ├── pack.toml
 ├── README.md
 ├── assets/prompts/mayor.template.md
+├── assets/prompts/refinery.template.md
 ├── template-fragments/
 │   ├── firstmate-communication.template.md
 │   └── firstmate-decision-ledger.template.md
@@ -186,7 +194,7 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 
 - `pack.toml` parses as TOML and uses only pack-spec keys.
 - `commands/*/run.sh` pass `shellcheck -s sh` and `sh -n`.
-- The Mayor prompt and both fragments parse and render as Go templates
+- The Mayor and refinery prompts and both fragments parse and render as Go templates
   (`missingkey=zero`), with and without a binding name, using gastown's real
   fragments at the pinned commit.
 - `decide` and `resolve` behave as documented against a stand-in for `gc bd`:
@@ -196,7 +204,11 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 **UNVERIFIED (never run in a live city):**
 
 - That `gc import add` plus the pinned gastown import loads, and that the
-  patch finds `mayor` and swaps the prompt.
+  patches find `mayor` and `refinery` and swap their prompts.
+- That the refinery boundary can identify an exact change and its resolved
+  decision in a live ledger, block it when absent, and prevent every merge
+  path until the captain's answer is recorded. The prompt rule is statically
+  rendered and checked; runtime enforcement has never run in a live city.
 - That `prompt_template` resolves correctly when the pack sits in Gas City's
   remote-import cache rather than the city directory.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for

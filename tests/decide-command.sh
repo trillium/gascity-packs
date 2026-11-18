@@ -57,6 +57,17 @@ for field in what you-do why-blocked artifact stakes; do
     expect_refusal 'full https URL' "$@"
 done
 
+for field in what you-do why-blocked artifact stakes; do
+    case "$field" in
+        what) set -- --kind merge --key merge-login-fix --what 'Merge trillium/gascity-packs#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open trillium/gascity-packs#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'trillium/gascity-packs#12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'trillium/gascity-packs#12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'trillium/gascity-packs#12 remains unavailable.' ;;
+    esac
+    expect_refusal 'full https URL' "$@"
+done
+
 output=$(run --kind merge --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change and merge it.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' \

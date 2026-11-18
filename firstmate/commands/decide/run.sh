@@ -60,7 +60,7 @@ blank() {
 }
 
 bare_pr_reference() {
-    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
+    printf '%s' "$1" | grep -Eq '#[0-9]+|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
 }
 
 pr_reference_without_https_url() {
