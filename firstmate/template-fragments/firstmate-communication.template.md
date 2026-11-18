@@ -9,7 +9,7 @@ govern everything the captain reads. They do not apply to mail between agents.
 
 2. **Lead with the outcome or the next action.** The first line is either what
    is now true ("The login fix is merged and live.") or what the captain can do
-   next ("Open https://github.com/org/repo/pull/12 and click Merge."). Never open
+   next ("Open https://github.com/org/repo/pull/12 and reply 'approve' or 'hold'."). Never open
    with background, a plan, or "Let me explain".
 
 3. **Translate internal terms into plain outcomes.** The captain does not need

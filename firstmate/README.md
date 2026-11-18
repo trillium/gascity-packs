@@ -36,7 +36,8 @@ Two things to do by hand (both **unverified**, see below):
    tells the refinery to stop and file a `merge` decision with `gc firstmate
    decide`. It tells the refinery to resume only when a resolved decision for
    that exact change has the captain's recorded `approve` outcome; `hold`
-   keeps it unlanded. The captain performs the merge. This v0 rail is not
+   keeps it unlanded. The captain decides approve or hold; the refinery performs
+   the merge only after an approve for that exact change. This v0 rail is not
    enforced against a refinery or other caller that skips the prompt: `resolve`
    does not verify who the caller is or bind an approval to one specific work
    item.
@@ -82,8 +83,8 @@ asked. The Mayor prompt requires this
 ```bash
 gc firstmate decide --kind merge --key pr-login-fix --binding firstmate \
   --what "Merge the login fix?" \
-  --you-do "Open the linked change and click Merge, or reply 'hold'." \
-  --why-blocked "Only the captain merges." \
+  --you-do "Open the linked change and reply 'approve' to let it land, or 'hold'." \
+  --why-blocked "Only the captain approves a merge." \
   --artifact "https://github.com/org/repo/pull/12" \
   --stakes "Login stays broken for new users until merged; merge is revertable."
 

@@ -14,7 +14,7 @@ Exactly three kinds, and nothing else:
 | `--kind` | Use when |
 |----------|----------|
 | `approve` | An action needs the captain's say-so (destructive, irreversible, outward-facing, or beyond your authority). |
-| `merge` | A finished change is ready and only the captain merges it. |
+| `merge` | A finished change is ready and the captain approves it or holds it. |
 | `pick` | There are real options and the choice is the captain's taste or priority. List the options in WHAT. |
 
 If it is not one of these, it is not a captain decision: decide it yourself and
@@ -27,7 +27,7 @@ Every decision carries all five. The command refuses a filing with any missing.
 | Field | Contents |
 |-------|----------|
 | `WHAT` | The decision, one plain sentence ending in a question mark. |
-| `WHAT YOU DO` | The exact action the captain takes ("Reply `merge` or `hold`", "Click Merge on the linked change"). |
+| `WHAT YOU DO` | The exact action the captain takes ("Reply `approve` or `hold`", "Open the linked change and reply `approve` or `hold`"). |
 | `WHY BLOCKED` | Why this cannot proceed without them (authority, irreversible, taste). |
 | `ARTIFACT` | The thing to look at: a full URL or path. Never a bare number. Every PR reference in any field must be a full HTTPS URL. |
 | `STAKES` | What waiting costs, what a wrong answer costs, and whether it can be undone. |
@@ -41,8 +41,8 @@ Every decision carries all five. The command refuses a filing with any missing.
    ```bash
    {{ cmd }} {{ $fm }} decide --kind merge --key "pr-login-fix" --binding "{{ $fm }}" \
      --what "Merge the login fix?" \
-     --you-do "Open the linked change and click Merge, or reply 'hold'." \
-     --why-blocked "Only the captain merges." \
+     --you-do "Open the linked change and reply 'approve' to let it land, or 'hold'." \
+     --why-blocked "Only the captain approves a merge." \
      --artifact "https://github.com/org/repo/pull/12" \
      --stakes "Login stays broken for new users until merged; merge is revertable." \
      [--blocks <work-bead-id>] [--rig <rig>]
