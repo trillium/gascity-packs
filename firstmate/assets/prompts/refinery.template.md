@@ -353,7 +353,7 @@ contradictory record on the bead.
 
 In `mr` mode, PR creation is a pending handoff, not completion. Record the
 canonical PR identity and validated head with
-`gc gastown pr-merge-reconcile record`; that command moves the work bead to
+`{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} pr-merge-reconcile record`; that command moves the work bead to
 `blocked` without closing it. Its dependency children therefore remain
 blocked until a later patrol verifies the PR merge. Leave the source branch
 intact for the PR lifecycle.
@@ -368,7 +368,7 @@ bead when the branch is merely pushed. If validation fails, record a durable
 blocked reason on the bead and escalate to mayor.
 
 Before every work scan, including re-entry after an idle wake, run
-`gc gastown pr-merge-reconcile` once. It checks the least-recently-checked
+`{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} pr-merge-reconcile` once. It checks the least-recently-checked
 pending marker in this rig and adopts handoffs left assigned to an earlier
 refinery session. Interrupted open records are recovered first: a complete
 `pull_request_pending` record is blocked before lookup, while an incomplete
@@ -434,7 +434,7 @@ alert the witness, not `gc mail send`.
 | Pour next wisp | `gc bd mol wisp mol-refinery-patrol --root-only --var target_branch={{ .DefaultBranch }} --var rig_name={{ .RigName }} --var binding_prefix={{ .BindingPrefix }}` |
 | Burn current wisp | Follow Patrol Lifecycle Discipline Rule 1: resolve `$CURRENT_WISP` first (pour nothing if you cannot), pour next wisp, validate `NEXT`, assign it to `$GC_AGENT`, then burn `$CURRENT_WISP`. Never run a standalone burn. |
 | Find assigned work | `gc bd list ${GC_RIG:+--rig="$GC_RIG"} --assignee="$GC_AGENT" --status=open,in_progress` — both statuses, comma-separated: a bead you already claimed is in_progress, and a query filtered to open alone can never see it again |
-| Reconcile pending PR | `gc gastown pr-merge-reconcile` |
+| Reconcile pending PR | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} pr-merge-reconcile` |
 | Snapshot event position | `gc events --seq` |
 | Wait for assignment | `gc events --watch --type=bead.updated --after=$SEQ` |
 | Read work metadata | `gc bd show $WORK --json \| jq '.[0].metadata'` |

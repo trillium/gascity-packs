@@ -82,5 +82,13 @@ func main() {
 			fmt.Fprintln(os.Stderr, "rendered refinery prompt incorrectly gates PR publication or handoffs")
 			os.Exit(1)
 		}
+		if strings.Count(refinery, "gc "+binding+" pr-merge-reconcile") != 3 {
+			fmt.Fprintln(os.Stderr, "rendered refinery prompt omits its bound PR reconciliation commands")
+			os.Exit(1)
+		}
+		if strings.Contains(refinery, "gc gastown pr-merge-reconcile") {
+			fmt.Fprintln(os.Stderr, "rendered refinery prompt retains the gastown PR reconciliation binding")
+			os.Exit(1)
+		}
 	}
 }
