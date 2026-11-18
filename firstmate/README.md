@@ -6,9 +6,9 @@ Mayor lacks. Those are a communication contract for talking to the human (the
 "captain") and a durable decision ledger.
 
 Everything else is gastown: deacon, boot, witness, refinery, polecats,
-formulas, orders. The captain alone owns merging. The patched refinery must
-hold a change until its exact merge decision is resolved with the captain's
-recorded `approve` outcome.
+formulas, orders. The refinery prompt tells it to hold a change until its
+exact merge decision records the captain's `approve` outcome. This is
+prompt-level guidance, not tamper-proof enforcement.
 
 > **Status: v0.1.0, static checks only.** The files parse and the scripts pass
 > `shellcheck`. The decision commands were exercised against a stand-in for
@@ -31,12 +31,15 @@ Two things to do by hand (both **unverified**, see below):
 
 1. **Import firstmate instead of gastown, not alongside it.** firstmate
    already imports gastown. Importing both would give you two of every role.
-2. **Set merge ownership before attaching any rig.** The captain is the sole
-   merge owner. The patched refinery must never merge autonomously: when a
-   change is ready to land, it stops and files a `merge` decision with `gc
-   firstmate decide`. It resumes only when a resolved decision for that exact
-   change has the captain's recorded `approve` outcome; `hold` keeps it
-   unlanded. The captain performs the merge.
+2. **Set merge ownership before attaching any rig.** The refinery prompt says
+   the captain is the sole merge owner: when a change is ready to land, it
+   tells the refinery to stop and file a `merge` decision with `gc firstmate
+   decide`. It tells the refinery to resume only when a resolved decision for
+   that exact change has the captain's recorded `approve` outcome; `hold`
+   keeps it unlanded. The captain performs the merge. This v0 rail is not
+   enforced against a refinery or other caller that skips the prompt: `resolve`
+   does not verify who the caller is or bind an approval to one specific work
+   item.
    Publishing a PR, closing a bead, and recording handoffs remain governed by
    the ordinary refinery workflow, so the captain can inspect the PR URL first.
 3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
@@ -102,10 +105,12 @@ gc firstmate resolve <id> --answer "merge it" --outcome approve   # record appro
 - `--binding <import-binding>` controls the resolve hint printed after filing;
   it defaults to `firstmate` and must be a plain identifier.
 - `resolve` records the answer as a comment first, then closes. A `merge`
-  decision also requires either `--outcome approve` or `--outcome hold`; only
-  `approve` lets the refinery land that exact change, while `hold` keeps it unlanded. It refuses
-  ids that are not ledger decisions or are already resolved, and it matches ids
-  exactly (plain `gc bd` fuzzy-matches).
+  decision also requires either `--outcome approve` or `--outcome hold`; an
+  `approve` outcome tells the refinery that exact change may land, while
+  `hold` tells it to keep the change unlanded. This is a recorded prompt-level
+  policy: `resolve` does not verify who supplied the answer or bind approval to
+  one specific work item. It refuses ids that are not ledger decisions or are
+  already resolved, and it matches ids exactly (plain `gc bd` fuzzy-matches).
 
 ## Design
 
@@ -213,11 +218,11 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 
 - That `gc import add` plus the pinned gastown import loads, and that the
   patches find `mayor` and `refinery` and swap their prompts.
-- That the refinery boundary can identify an exact change and its resolved
-  decision in a live ledger, block landing when absent, and prevent every merge
-  path until the captain's `approve` outcome is recorded while leaving PR
-  publication and ordinary handoffs available. The prompt rule is statically
-  rendered and checked; runtime enforcement has never run in a live city.
+- The captain-only merge rail is prompt-level guidance to the refinery, not
+  tamper-proof enforcement. It is not enforced against a refinery or any other
+  caller that skips it; `resolve` does not verify the caller or bind an
+  approval to one specific work item. The prompt rule is statically rendered
+  and checked, but runtime enforcement has never run in a live city.
 - That `prompt_template` resolves correctly when the pack sits in Gas City's
   remote-import cache rather than the city directory.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for
@@ -249,6 +254,10 @@ These are known gaps, left for later:
   guards filing, not authority.
 - **Refuse-on-unlanded teardown.** Refusing to tear down a worker's workspace
   while it holds uncommitted or unmerged work.
+- **Scripted merge gate (v0.1).** One merge script that reads live
+  preconditions, binds the captain's identity, and records a persisted
+  per-work-item merge-authority flag. v0 has only the refinery prompt-level
+  rail.
 - **Scouts: the Mayor launching read-only workers.** A scout is a worker whose
   deliverable is a **report, not a PR**, and which never writes to the project
   it studies. The Mayor must be able to launch one, and **may not relay a
@@ -260,7 +269,8 @@ These are known gaps, left for later:
   [Roadmap layout](#roadmap-layout-where-scouts-drop-in), so nothing in v0
   needs restructuring.
 - **Proof that the answer came from the captain.** `resolve` records whatever
-  `--answer` it is given; v0 relies on the prompt rule that it be the
+  `--answer` it is given; it neither verifies the caller nor binds an approval
+  to a specific work item. v0 relies on the prompt rule that it be the
   captain's own words.
 
 ## License and upstream
