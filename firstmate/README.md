@@ -10,10 +10,11 @@ formulas, orders. The refinery prompt tells it to hold a change until its
 exact merge decision records the captain's `approve` outcome. This is
 prompt-level guidance, not tamper-proof enforcement.
 
-> **Status: v0.1.0, static checks only.** The files parse and the scripts pass
-> `shellcheck`. The decision commands were exercised against a stand-in for
-> `gc bd`, and the prompt templates render. Nothing here has run in a live Gas
-> City. See [Verified vs unverified](#verified-vs-unverified).
+> **Status: v0.1.0.** The files parse and the scripts pass `shellcheck`. The
+> decision commands were exercised against a stand-in for `gc bd`, and the
+> prompt templates render. A live import passed `config-valid` with Gas City
+> `0.15.1.trillium`, but that version did not dispatch the imported commands.
+> See [Verified vs unverified](#verified-vs-unverified).
 
 ## Install
 
@@ -27,7 +28,7 @@ gc import add https://github.com/trillium/gascity-packs/tree/main/firstmate --ve
 `pack.toml` and locks it. The default binding name is the last path segment,
 `firstmate`; override it with `--name`.
 
-Two things to do by hand (both **unverified**, see below):
+Things to do by hand (all but the import check are **unverified**, see below):
 
 1. **Import firstmate instead of gastown, not alongside it.** firstmate
    already imports gastown. Importing both would give you two of every role.
@@ -53,8 +54,11 @@ Two things to do by hand (both **unverified**, see below):
    version = "sha:<commit>"
    ```
 
-Once imported, the commands run as `gc <binding> <command>`, for example
-`gc firstmate decide list`. If you chose another binding name, the Mayor prompt
+The intended command form is `gc <binding> <command>`, for example
+`gc firstmate decide list`. However, on the live-checked Gas City
+`0.15.1.trillium`, `gc --city <city> helm decide --help` and `resolve --help`
+fell through to top-level help instead of dispatching; do not rely on these
+commands in that version. If you choose another binding name, the Mayor prompt
 renders that name into its instructions automatically.
 
 ## What it does
@@ -214,11 +218,13 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   missing field, bad kind, malformed question, bare-number artifact, duplicate
   key, unknown id, double resolve, missing or invalid merge outcome, hold and
   approve outcomes, unowned caller.
+- In a disposable live Gas City `0.15.1.trillium` city, importing firstmate
+  under the custom `helm` binding passed `config-valid`.
 
-**UNVERIFIED (never run in a live city):**
+**UNVERIFIED or unavailable in the checked live version:**
 
-- That `gc import add` plus the pinned gastown import loads, and that the
-  patches find `mayor` and `refinery` and swap their prompts.
+- That the patches find `mayor` and `refinery` and swap their prompts at
+  runtime.
 - The captain-only merge rail is prompt-level guidance to the refinery, not
   tamper-proof enforcement. It is not enforced against a refinery or any other
   caller that skips it; `resolve` does not verify the caller or bind an
@@ -229,8 +235,12 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for
   `[defaults.rig.imports.firstmate]`, and that importing firstmate *instead of*
   gastown is right.
-- That commands appear as `gc <binding> <command>` with the environment the
-  scripts expect (`GC_BIN`, `GC_AGENT`, `GC_RIG`).
+- Command dispatch is unavailable in the live-checked Gas City
+  `0.15.1.trillium`: `gc --city <city> helm decide --help` and
+  `gc --city <city> helm resolve --help` fall through to top-level help. It is
+  therefore unverified that commands appear as `gc <binding> <command>` with
+  the environment the scripts expect (`GC_BIN`, `GC_AGENT`, `GC_RIG`) on a
+  version where dispatch works.
 - The real `gc bd` / `bd` behavior the scripts rely on: the flags
   `create --silent --description --labels --deps blocks:<id>`,
   `list --label --all --json --limit 0`, `comment`, `close --reason`; `--rig=`
