@@ -61,7 +61,10 @@ blank() {
 }
 
 bare_pr_reference() {
-    printf '%s' "$1" | sed 's#https://[^[:space:]]*# #g' | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|(^|[[:space:]])[A-Za-z0-9_-]+/[A-Za-z0-9._-]+#[0-9]+([[:space:].,?)]|$)|(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)'
+    # A "PR" / "pull request" label directly followed by a full https URL is a
+    # valid reference; drop those first, then drop any other https URL, and look
+    # for a bare reference in what is left.
+    printf '%s' "$1" | sed -E 's#([Pp][Rr]|[Pp]ull[[:space:]]+[Rr]equest)[[:space:]]*[:-]?[[:space:]]*https://[^[:space:]]*# #g; s#https://[^[:space:]]*# #g' | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|(^|[[:space:]])[A-Za-z0-9_-]+/[A-Za-z0-9._-]+#[0-9]+([[:space:].,?)]|$)|(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)'
 }
 
 pr_url_without_https() {
