@@ -59,13 +59,15 @@ Every decision carries all five. The command refuses a filing with any missing.
    their own words:
 
    ```bash
-   {{ cmd }} {{ $fm }} resolve <decision-id> --answer "<what the captain said, verbatim>"
+   {{ cmd }} {{ $fm }} resolve <decision-id> --answer "<what the captain said, verbatim>" --outcome approve|hold
    ```
 
-   This records the answer and closes the decision. A decision with no recorded
-   answer is still open, even if the captain seemed to agree in passing. Never
-   write an answer the captain did not give, and never resolve a decision with
-   your own judgment.
+   For a `merge` decision, this records the answer and an explicit `approve` or
+   `hold` outcome before closing it. Only `approve` authorizes that exact change
+   to land; `hold` keeps it unlanded. A decision with no recorded answer is
+   still open, even if the captain seemed to agree in passing. Never write an
+   answer the captain did not give, and never resolve a decision with your own
+   judgment.
 6. **Re-surface open decisions.** At session start, after a handoff or
    compaction, and before any final message, run `decide list`. Lead your next
    message to the captain with the count and the oldest item: "2 decisions are

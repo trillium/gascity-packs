@@ -41,6 +41,11 @@ expect_refusal '--key is required' \
     --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' \
     --stakes 'The fix remains unavailable.'
 
+expect_refusal 'must end with a question mark' \
+    --kind merge --key merge-login-fix --what 'Merge the login fix' \
+    --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
+    --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
+
 expect_refusal 'full https URL' \
     --kind merge --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the PR and merge it.' --why-blocked 'Only the captain merges.' \
@@ -68,13 +73,14 @@ for field in what you-do why-blocked artifact stakes; do
     expect_refusal 'full https URL' "$@"
 done
 
-output=$(run --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+output=$(GC_PACK_NAME=helm GC_BIN="$TMPDIR/gc" GC_AGENT=mayor "$SCRIPT" --kind merge --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change and merge it.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' \
     --stakes 'The fix remains unavailable until the captain merges it.')
 case "$output" in
-    *'DECISION FILED: fm-decision-1 (kind: merge)'*'Only the captain merges.'*) ;;
+    *'DECISION FILED: fm-decision-1 (kind: merge)'*'Only the captain merges.'*'gc helm resolve fm-decision-1'*) ;;
     *) echo "accepted merge was not filed as a captain decision: $output" >&2; exit 1 ;;
 esac
 
+"$ROOT/tests/resolve-command.sh"
 "$ROOT/tests/render-prompts.sh"

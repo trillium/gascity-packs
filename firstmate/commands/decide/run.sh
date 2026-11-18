@@ -17,6 +17,7 @@ set -eu
 LABEL="firstmate-decision"
 GC="${GC_BIN:-gc}"
 RIG="${GC_RIG:-}"
+PACK_BINDING="${GC_PACK_NAME:-firstmate}"
 
 usage() {
     cat >&2 <<'EOF'
@@ -114,6 +115,11 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+case "$(printf '%s' "$WHAT" | sed 's/[[:space:]]*$//')" in
+    *\?) ;;
+    *) die "WHAT (--what) must end with a question mark" ;;
+esac
+
 [ -n "${GC_AGENT:-}" ] || die "GC_AGENT is empty; refusing an unowned filing"
 
 # The kind vocabulary is closed. Anything else is not a captain decision.
@@ -194,5 +200,5 @@ WHY BLOCKED: $WHY
 ARTIFACT: $ARTIFACT
 STAKES: $STAKES
 
-When they answer: gc firstmate resolve $id --answer "<their words>"
+When they answer: gc $PACK_BINDING resolve $id --answer "<their words>" --outcome approve|hold (required for merge decisions)
 EOF

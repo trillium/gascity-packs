@@ -8,7 +8,7 @@ Mayor lacks. Those are a communication contract for talking to the human (the
 Everything else is gastown: deacon, boot, witness, refinery, polecats,
 formulas, orders. The captain alone owns merging. The patched refinery must
 hold a change until its exact merge decision is resolved with the captain's
-recorded answer.
+recorded `approve` outcome.
 
 > **Status: v0.1.0, static checks only.** The files parse and the scripts pass
 > `shellcheck`. The decision commands were exercised against a stand-in for
@@ -35,7 +35,8 @@ Two things to do by hand (both **unverified**, see below):
    merge owner. The patched refinery must never merge autonomously: when a
    change is ready to land, it stops and files a `merge` decision with `gc
    firstmate decide`. It resumes only when a resolved decision for that exact
-   change has the captain's recorded answer; the captain performs the merge.
+   change has the captain's recorded `approve` outcome; `hold` keeps it
+   unlanded. The captain performs the merge.
    Publishing a PR, closing a bead, and recording handoffs remain governed by
    the ordinary refinery workflow, so the captain can inspect the PR URL first.
 3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
@@ -84,7 +85,7 @@ gc firstmate decide --kind merge --key pr-login-fix \
   --stakes "Login stays broken for new users until merged; merge is revertable."
 
 gc firstmate decide list            # what is waiting on the captain
-gc firstmate resolve <id> --answer "merge it"   # record the answer and close
+gc firstmate resolve <id> --answer "merge it" --outcome approve   # record approval and close
 ```
 
 - The bead carries labels `firstmate-decision`, `decision-kind:<kind>` and
@@ -98,8 +99,10 @@ gc firstmate resolve <id> --answer "merge it"   # record the answer and close
 - `--key` is required and makes filing idempotent: an open decision with the
   same key is returned instead of filed twice.
 - `--blocks <work-bead>` makes the work depend on the decision.
-- `resolve` records the answer as a comment first, then closes. It refuses ids
-  that are not ledger decisions or are already resolved, and it matches ids
+- `resolve` records the answer as a comment first, then closes. A `merge`
+  decision also requires `--outcome approve|hold`; only `approve` lets the
+  refinery land that exact change, while `hold` keeps it unlanded. It refuses
+  ids that are not ledger decisions or are already resolved, and it matches ids
   exactly (plain `gc bd` fuzzy-matches).
 
 ## Design
@@ -200,8 +203,9 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   (`missingkey=zero`), with and without a binding name, using gastown's real
   fragments at the pinned commit.
 - `decide` and `resolve` behave as documented against a stand-in for `gc bd`:
-  missing field, bad kind, bare-number artifact, duplicate key, unknown id,
-  double resolve, unowned caller.
+  missing field, bad kind, malformed question, bare-number artifact, duplicate
+  key, unknown id, double resolve, missing or invalid merge outcome, hold and
+  approve outcomes, unowned caller.
 
 **UNVERIFIED (never run in a live city):**
 
@@ -209,9 +213,9 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   patches find `mayor` and `refinery` and swap their prompts.
 - That the refinery boundary can identify an exact change and its resolved
   decision in a live ledger, block landing when absent, and prevent every merge
-  path until the captain's answer is recorded while leaving PR publication and
-  ordinary handoffs available. The prompt rule is statically rendered and
-  checked; runtime enforcement has never run in a live city.
+  path until the captain's `approve` outcome is recorded while leaving PR
+  publication and ordinary handoffs available. The prompt rule is statically
+  rendered and checked; runtime enforcement has never run in a live city.
 - That `prompt_template` resolves correctly when the pack sits in Gas City's
   remote-import cache rather than the city directory.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for

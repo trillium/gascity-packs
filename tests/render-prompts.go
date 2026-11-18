@@ -62,7 +62,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits captain-only merge ownership")
 			os.Exit(1)
 		}
-		if !strings.Contains(refinery, "target branch unless a resolved `merge` decision exists for that exact\nchange") || !strings.Contains(refinery, "captain's recorded answer") {
+		if !strings.Contains(mayor, "only `approve` authorizes that exact change to land, while `hold` leaves it unlanded") {
+			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits merge outcome authority")
+			os.Exit(1)
+		}
+		if !strings.Contains(refinery, "target branch unless a resolved `merge` decision has outcome `approve` for that\nexact change") || !strings.Contains(refinery, "hold`, keep the change unlanded and stop") {
 			fmt.Fprintln(os.Stderr, "rendered refinery prompt omits the ledger gate")
 			os.Exit(1)
 		}

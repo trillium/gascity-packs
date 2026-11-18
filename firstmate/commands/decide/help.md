@@ -39,8 +39,9 @@ flag, `GC_RIG` is used when set; otherwise the city store.
 `list` prints open decisions oldest first as `id`, `status`, `title`;
 `--all` includes resolved ones.
 
-Close a decision with `gc firstmate resolve`. If the pack was imported under a
-different binding name, replace `firstmate` with that name.
+Close a decision with `gc firstmate resolve`; a `merge` decision also requires
+`--outcome approve|hold`. If the pack was imported under a different binding
+name, replace `firstmate` with that name.
 
 Environment variables set by gc:
   GC_BIN         Path to the gc binary

@@ -1,6 +1,6 @@
 #!/bin/sh
 # firstmate resolve - record the captain's answer to a decision and close it.
-# Invoked as: gc firstmate resolve ID --answer "the captain's words"
+# Invoked as: gc firstmate resolve ID --answer "the captain's words" [--outcome approve|hold]
 #
 # Environment (set by gc):
 #   GC_BIN    - path to the gc binary (falls back to `gc` on PATH)
@@ -19,7 +19,7 @@ RIG="${GC_RIG:-}"
 
 usage() {
     cat >&2 <<'EOF'
-usage: gc firstmate resolve ID --answer "what the captain said" [--rig RIG]
+usage: gc firstmate resolve ID --answer "what the captain said" [--outcome approve|hold] [--rig RIG]
 EOF
     exit 2
 }
@@ -41,9 +41,11 @@ gcbd() {
 
 ID=""
 ANSWER=""
+OUTCOME=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --answer) [ $# -ge 2 ] || usage; ANSWER=$2; shift 2 ;;
+        --outcome) [ $# -ge 2 ] || usage; OUTCOME=$2; shift 2 ;;
         --rig)    [ $# -ge 2 ] || usage; RIG=$2; shift 2 ;;
         -h|--help|help) usage ;;
         -*) echo "resolve: unknown argument: $1" >&2; usage ;;
@@ -66,25 +68,58 @@ listing=$(gcbd list --label "$LABEL" --all --json --limit 0) \
     || die "could not read the ledger"
 [ -n "$listing" ] || die "ledger read returned nothing (is the store reachable?)"
 
-status=$(printf '%s' "$listing" | jq -r --arg id "$ID" '
+decision=$(printf '%s' "$listing" | jq -c --arg id "$ID" '
     if type != "array" then error("unexpected ledger payload")
-    else (map(select(.id == $id)) | .[0].status // "") end') \
+    else (map(select(.id == $id)) | .[0] // null) end') \
     || die "unexpected ledger payload"
+
+status=$(printf '%s' "$decision" | jq -r '.status // empty') \
+    || die "unexpected decision payload"
 
 case "$status" in
     "")     die "'$ID' is not a decision in the ledger (exact id required); run 'gc firstmate decide list'" ;;
     closed) die "'$ID' is already resolved; its recorded answer is in its comments (gc bd comments $ID)" ;;
 esac
 
+is_merge=$(printf '%s' "$decision" | jq -r '
+    (.labels // []) as $labels |
+    if ($labels | type) == "array" then ($labels | index("decision-kind:merge") != null)
+    else ($labels | tostring | contains("decision-kind:merge"))
+    end') || die "unexpected decision labels"
+
+case "$is_merge" in
+    true)
+        case "$OUTCOME" in
+            approve|hold) ;;
+            "") die "--outcome approve|hold is required for a merge decision" ;;
+            *) die "--outcome must be approve or hold for a merge decision" ;;
+        esac
+        ;;
+    false) [ -z "$OUTCOME" ] || die "--outcome applies only to merge decisions" ;;
+    *) die "unexpected decision labels" ;;
+esac
+
 # Record the answer first, so a failed close still leaves the answer on file.
-gcbd comment "$ID" "ANSWER (from the captain, recorded by $GC_AGENT): $ANSWER" \
+comment="ANSWER (from the captain, recorded by $GC_AGENT): $ANSWER"
+if [ "$is_merge" = true ]; then
+    comment="$comment
+OUTCOME: $OUTCOME"
+fi
+gcbd comment "$ID" "$comment" \
     || die "could not record the answer on '$ID'; nothing was closed"
 
 short=$(printf '%s' "$ANSWER" | head -n 1 | cut -c1-120)
-if ! gcbd close "$ID" --reason "resolved by the captain: $short"; then
-    die "answer recorded on '$ID' but closing it failed; retry: gc bd close $ID"
+reason="resolved by the captain: $short"
+if [ "$is_merge" = true ]; then
+    reason="$reason (outcome: $OUTCOME)"
+fi
+if ! gcbd close "$ID" --reason "$reason"; then
+    die "answer and outcome recorded on '$ID' but closing it failed; retry: gc bd close $ID"
 fi
 
 echo "DECISION RESOLVED: $ID"
 echo "Recorded answer: $ANSWER"
+if [ "$is_merge" = true ]; then
+    echo "Recorded outcome: $OUTCOME"
+fi
 echo "Now act on it, and tell the captain what changed (outcome first)."
