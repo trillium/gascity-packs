@@ -76,3 +76,5 @@ case "$output" in
     *'DECISION FILED: fm-decision-1 (kind: merge)'*'Only the captain merges.'*) ;;
     *) echo "accepted merge was not filed as a captain decision: $output" >&2; exit 1 ;;
 esac
+
+"$ROOT/tests/render-prompts.sh"

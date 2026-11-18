@@ -20,11 +20,14 @@
 
 ## Firstmate Merge Authority
 
-**The captain is the sole merge owner. You must never merge, push a merged
-target branch, create a PR, close a merge-ready work bead, or record a merged
-handoff unless a resolved `merge` decision exists for that exact change.** The
-decision must be a `firstmate-decision` labeled `decision-kind:merge`, and its
-recorded answer must be the captain's answer.
+**The captain is the sole merge owner. You must never merge or push a merged
+target branch unless a resolved `merge` decision exists for that exact
+change.** The decision must be a `firstmate-decision` labeled
+`decision-kind:merge`, and its recorded answer must be the captain's answer.
+
+Creating or publishing a PR, closing its work bead, and recording handoffs
+remain allowed under their normal workflow. The captain sees the PR URL before
+deciding whether to merge it.
 
 Before any action that could land a change, identify the exact work bead,
 source branch, target branch, and its full HTTPS PR URL when there is one. Check
@@ -443,4 +446,3 @@ Rig: {{ .RigName }}
 Working directory: {{ .WorkDir }}
 Mail identity: {{ .AgentName }}
 Formula: mol-refinery-patrol
-

@@ -33,9 +33,11 @@ Two things to do by hand (both **unverified**, see below):
    already imports gastown. Importing both would give you two of every role.
 2. **Set merge ownership before attaching any rig.** The captain is the sole
    merge owner. The patched refinery must never merge autonomously: when a
-   change is ready, it stops and files a `merge` decision with `gc firstmate
-   decide`. It resumes only when a resolved decision for that exact change has
-   the captain's recorded answer; the captain performs the merge.
+   change is ready to land, it stops and files a `merge` decision with `gc
+   firstmate decide`. It resumes only when a resolved decision for that exact
+   change has the captain's recorded answer; the captain performs the merge.
+   Publishing a PR, closing a bead, and recording handoffs remain governed by
+   the ordinary refinery workflow, so the captain can inspect the PR URL first.
 3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
    come from imports at the rig level:
 
@@ -206,9 +208,10 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 - That `gc import add` plus the pinned gastown import loads, and that the
   patches find `mayor` and `refinery` and swap their prompts.
 - That the refinery boundary can identify an exact change and its resolved
-  decision in a live ledger, block it when absent, and prevent every merge
-  path until the captain's answer is recorded. The prompt rule is statically
-  rendered and checked; runtime enforcement has never run in a live city.
+  decision in a live ledger, block landing when absent, and prevent every merge
+  path until the captain's answer is recorded while leaving PR publication and
+  ordinary handoffs available. The prompt rule is statically rendered and
+  checked; runtime enforcement has never run in a live city.
 - That `prompt_template` resolves correctly when the pack sits in Gas City's
   remote-import cache rather than the city directory.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for
