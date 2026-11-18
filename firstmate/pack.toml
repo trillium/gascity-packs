@@ -1,0 +1,20 @@
+[pack]
+name = "trillium/firstmate"
+schema = 2
+version = "0.1.0"
+
+# gastown supplies every role (deacon, boot, witness, refinery, polecat, ...)
+# and the Mayor this pack customizes. Pinned to a commit; bump deliberately and
+# diff assets/prompts/mayor.template.md against the upstream Mayor prompt.
+[imports.gastown]
+source = "https://github.com/gastownhall/gascity-packs/tree/main/gastown"
+version = "sha:0f07496d2fa4fd957a8bea77dcfd653c5d4bcef5"
+
+# Replace the imported Mayor's prompt; leave every other gastown role untouched.
+# Pack-level patches match the imported agent by its LOCAL name ("mayor", not
+# "gastown.mayor") and resolve prompt_template relative to this pack directory.
+# The prompt lives under assets/ rather than agents/mayor/ so it cannot collide
+# with the imported mayor agent.
+[[patches.agent]]
+name = "mayor"
+prompt_template = "assets/prompts/mayor.template.md"

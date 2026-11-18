@@ -1,0 +1,226 @@
+# firstmate
+
+A Gas City pack that swaps the gastown Mayor's prompt for a **firstmate-style
+Mayor**: it works inside Gas City's rules, and adds the two things Gas City's
+Mayor lacks. Those are a communication contract for talking to the human (the
+"captain") and a durable decision ledger.
+
+Everything else is gastown, unchanged: deacon, boot, witness, refinery,
+polecats, formulas, orders.
+
+> **Status: v0.1.0, static checks only.** The files parse and the scripts pass
+> `shellcheck`. The decision commands were exercised against a stand-in for
+> `gc bd`, and the prompt templates render. Nothing here has run in a live Gas
+> City. See [Verified vs unverified](#verified-vs-unverified).
+
+## Install
+
+```bash
+gc import add https://github.com/trillium/gascity-packs/tree/main/firstmate
+# or pin a commit:
+gc import add https://github.com/trillium/gascity-packs/tree/main/firstmate --version sha:<commit>
+```
+
+`gc import add` writes a durable `[imports.firstmate]` entry into your city's
+`pack.toml` and locks it. The default binding name is the last path segment,
+`firstmate`; override it with `--name`.
+
+Two things to do by hand (both **unverified**, see below):
+
+1. **Import firstmate instead of gastown, not alongside it.** firstmate
+   already imports gastown. Importing both would give you two of every role.
+2. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
+   come from imports at the rig level:
+
+   ```toml
+   # city.toml
+   [defaults.rig.imports.firstmate]
+   source = "https://github.com/trillium/gascity-packs/tree/main/firstmate"
+   version = "sha:<commit>"
+   ```
+
+Once imported, the commands run as `gc <binding> <command>`, for example
+`gc firstmate decide list`. If you chose another binding name, the Mayor prompt
+renders that name into its instructions automatically.
+
+## What it does
+
+### 1. Communication contract (`template-fragments/firstmate-communication.template.md`)
+
+The Mayor's prompt carries seven rules for everything the captain reads:
+
+1. Address the human as "captain".
+2. Lead with the outcome or the next action.
+3. Translate internal terms (bead, polecat, refinery, convoy, rig...) into plain
+   outcomes.
+4. Ask only for approval, a merge, or a pick. Decide everything else.
+5. Never claim running, stuck, done, or healthy without a check made this turn.
+   A status line is an event, not the truth.
+6. Make every final message standalone, with full PR URLs, and never a bare
+   number.
+7. Make wins visible.
+
+### 2. Decision ledger (`commands/decide`, `commands/resolve`)
+
+Each captain-needed decision is filed as a labeled bead **before** anyone is
+asked. The Mayor prompt requires this
+(`template-fragments/firstmate-decision-ledger.template.md`).
+
+```bash
+gc firstmate decide --kind merge --key pr-login-fix \
+  --what "Merge the login fix?" \
+  --you-do "Open the PR and click Merge, or reply 'hold'." \
+  --why-blocked "Only the captain merges." \
+  --artifact "https://github.com/org/repo/pull/12" \
+  --stakes "Login stays broken for new users until merged; merge is revertable."
+
+gc firstmate decide list            # what is waiting on the captain
+gc firstmate resolve <id> --answer "merge it"   # record the answer and close
+```
+
+- The bead carries labels `firstmate-decision`, `decision-kind:<kind>` and,
+  with `--key`, `decision-key:<key>`. The description holds the five fields
+  **WHAT / WHAT YOU DO / WHY BLOCKED / ARTIFACT / STAKES**.
+- `--kind` is a closed vocabulary: `approve`, `merge`, `pick`. Anything else is
+  refused, since it is not a captain decision.
+- A filing with any field missing or blank is refused. An `ARTIFACT` that is a
+  bare number (`#11`) is refused.
+- `--key` makes filing idempotent: an open decision with the same key is
+  returned instead of filed twice.
+- `--blocks <work-bead>` makes the work depend on the decision.
+- `resolve` records the answer as a comment first, then closes. It refuses ids
+  that are not ledger decisions or are already resolved, and it matches ids
+  exactly (plain `gc bd` fuzzy-matches).
+
+## Design
+
+### Patch, not a full agent
+
+The pack imports gastown and replaces only the Mayor's prompt with a
+pack-level patch:
+
+```toml
+[[patches.agent]]
+name = "mayor"
+prompt_template = "assets/prompts/mayor.template.md"
+```
+
+**Finding: `[[patches.agent]]` can replace a prompt, so no full agent is
+defined.** `prompt_template` is a patchable field, pack-level patches apply
+after imports merge, and the path resolves relative to the patching pack
+directory. Read from Gas City's source
+(`internal/config/patch.go`, `internal/config/pack.go`) and its pack spec
+("Pack-level patch paths in `prompt_template` ... resolve relative to the
+patching pack directory"). Not yet run; see below.
+
+Consequences worth knowing:
+
+- Pack-level patches match the imported agent by its **local** name (`mayor`),
+  not `gastown.mayor`. A missing target is a hard load error.
+- The prompt lives at `assets/prompts/mayor.template.md`, **not**
+  `agents/mayor/`. An `agents/mayor/` directory would define a second mayor
+  that collides with the imported one. The `.template.md` suffix is what makes
+  Gas City execute it as a Go template.
+- The prompt is a copy of gastown's Mayor prompt with firstmate blocks added.
+  A prompt patch replaces the whole prompt, so **upstream Mayor changes do not
+  flow in automatically**. The file's header records the upstream commit; when
+  you bump the pin in `pack.toml`, diff the two by hand.
+- A lighter alternative exists: `inject_fragments_append` could append the two
+  fragments to the untouched upstream prompt, with no fork to maintain. It is
+  not used because that would put the contract at the *end* of the prompt, and
+  the contract has to frame the rest.
+
+### Names under the `firstmate` binding
+
+Importing firstmate re-stamps every gastown role under its binding (for example
+`firstmate.polecat`). gastown's prompts use `{{ .BindingPrefix }}`, so they
+follow. Wherever you wrote `gastown.polecat` (default sling targets, named
+sessions) you will write `firstmate.polecat`.
+
+### Current pack-spec constructs only
+
+`schema = 2`, `[imports.*]` with a `source` plus `sha:` version pin,
+`[[patches.agent]]`, `template-fragments/`, `commands/<name>/{run.sh,help.md}`,
+and private files under `assets/`. No `[[agent]]`, `[formulas].dir`, top-level
+`scripts/`, registry handles, or `path`/`ref`/`commit`/`hash` import keys.
+
+### Layout
+
+```text
+firstmate/
+├── pack.toml
+├── README.md
+├── assets/prompts/mayor.template.md
+├── template-fragments/
+│   ├── firstmate-communication.template.md
+│   └── firstmate-decision-ledger.template.md
+└── commands/
+    ├── decide/{run.sh,help.md}
+    └── resolve/{run.sh,help.md}
+```
+
+## Verified vs unverified
+
+**Verified (static):**
+
+- `pack.toml` parses as TOML and uses only pack-spec keys.
+- `commands/*/run.sh` pass `shellcheck -s sh` and `sh -n`.
+- The Mayor prompt and both fragments parse and render as Go templates
+  (`missingkey=zero`), with and without a binding name, using gastown's real
+  fragments at the pinned commit.
+- `decide` and `resolve` behave as documented against a stand-in for `gc bd`:
+  missing field, bad kind, bare-number artifact, duplicate key, unknown id,
+  double resolve, unowned caller.
+
+**UNVERIFIED (never run in a live city):**
+
+- That `gc import add` plus the pinned gastown import loads, and that the
+  patch finds `mayor` and swaps the prompt.
+- That `prompt_template` resolves correctly when the pack sits in Gas City's
+  remote-import cache rather than the city directory.
+- The re-stamping of gastown roles as `firstmate.<name>`, the need for
+  `[defaults.rig.imports.firstmate]`, and that importing firstmate *instead of*
+  gastown is right.
+- That commands appear as `gc <binding> <command>` with the environment the
+  scripts expect (`GC_BIN`, `GC_AGENT`, `GC_RIG`).
+- The real `gc bd` / `bd` behavior the scripts rely on: the flags
+  `create --silent --description --labels --deps blocks:<id>`,
+  `list --label --all --json --limit 0`, `comment`, `close --reason`; `--rig=`
+  being accepted on those subcommands; and that `list --json` rows expose
+  `id`, `status`, `title` and `created_at`. Misreads here fail closed (the
+  commands refuse and print why), but they would make the ledger unusable.
+- Whether `--deps blocks:<id>` works when the work bead lives in a different
+  rig's store.
+
+Prove these in a throwaway city before depending on the pack.
+
+## Deliberately not in v0
+
+These are known gaps, left for later:
+
+- **Zero-token detection orders.** Scripts that detect stuck work, stale
+  decisions or failed merges without spending model tokens. Today the Mayor has
+  to look, by prompt rule only.
+- **Fail-closed authority checks (`gc doctor`).** A closed vocabulary for
+  authority flags, with doctor checks that fail when one is unreadable. The
+  decision `--kind` vocabulary is the only closed vocabulary so far, and it
+  guards filing, not authority.
+- **Refuse-on-unlanded teardown.** Refusing to tear down a worker's workspace
+  while it holds uncommitted or unmerged work.
+- **A merge-owner decision.** Gas City's refinery and a human-run merge are two
+  merge authorities. Which one owns merging must be decided before projects are
+  attached. v0 simply routes `merge` decisions to the captain.
+- **Proof that the answer came from the captain.** `resolve` records whatever
+  `--answer` it is given; v0 relies on the prompt rule that it be the
+  captain's own words.
+
+## License and upstream
+
+The Mayor prompt is derived from gastown's, from
+[gastownhall/gascity-packs](https://github.com/gastownhall/gascity-packs) at
+commit `0f07496d2fa4fd957a8bea77dcfd653c5d4bcef5`. The firstmate additions are
+marked `FIRSTMATE` in the prompt.
+
+**Note:** the gascity-packs repository has no root `LICENSE` file at that
+commit (gascity itself is MIT); confirm upstream terms before reusing the
+derived prompt outside this repo.
