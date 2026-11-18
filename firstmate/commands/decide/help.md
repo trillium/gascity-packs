@@ -6,19 +6,19 @@ File a decision that needs the captain, in the decision ledger. File it here
 ```text
 gc firstmate decide --kind approve|merge|pick --what TEXT --you-do TEXT \
     --why-blocked TEXT --artifact TEXT --stakes TEXT \
-    [--key KEY] [--blocks WORK_BEAD_ID] [--rig RIG]
+    --key KEY [--blocks WORK_BEAD_ID] [--rig RIG]
 gc firstmate decide list [--all] [--rig RIG]
 ```
 
-A decision is a bead labeled `firstmate-decision` (plus `decision-kind:<kind>`
-and, with `--key`, `decision-key:<key>`). Its description holds five fields:
+A decision is a bead labeled `firstmate-decision`, `decision-kind:<kind>`, and
+`decision-key:<key>`. Its description holds five fields:
 
 | Flag | Field | Contents |
 |------|-------|----------|
 | `--what` | WHAT | The decision in one plain sentence, ending in a question mark. |
 | `--you-do` | WHAT YOU DO | The exact action the captain takes. |
 | `--why-blocked` | WHY BLOCKED | Why it cannot proceed without them. |
-| `--artifact` | ARTIFACT | What to look at: a full URL or path, never a bare number. |
+| `--artifact` | ARTIFACT | What to look at: a full URL or path, never a bare number; every PR reference in any field must use a full HTTPS URL. |
 | `--stakes` | STAKES | Cost of waiting, cost of a wrong answer, whether it can be undone. |
 
 All five are required; a filing with a missing field is refused.
@@ -26,9 +26,9 @@ All five are required; a filing with a missing field is refused.
 `--kind` is a closed vocabulary: `approve`, `merge`, or `pick`. Anything else is
 not a captain decision, and the command refuses it.
 
-`--key` makes filing idempotent: if an open decision with the same key exists,
-its id is printed and nothing new is filed. Keys use letters, digits, `.`, `_`
-and `-`.
+`--key` is required and makes filing idempotent: if an open decision with the
+same key exists, its id is printed and nothing new is filed. Keys use letters,
+digits, `.`, `_` and `-`.
 
 `--blocks WORK_BEAD_ID` makes that work item depend on the decision, so it is
 not picked up until the decision is closed.

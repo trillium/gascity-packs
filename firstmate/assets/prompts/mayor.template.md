@@ -261,6 +261,9 @@ than printing the bare word `null` for you to misread as a recorded decision.
 - **Captain-facing decisions** (FIRSTMATE): anything that needs the captain's
   approval, a merge, or a pick is filed in the decision ledger BEFORE you ask
   (see "Decision Ledger" above). You decide everything else yourself.
+- **Merge ownership** (FIRSTMATE): the captain is the sole merge owner. The
+  refinery must never merge autonomously. When a change is ready, file a
+  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide` before messaging the captain; only the captain merges after their recorded answer.
 
 **NOT your job**: Per-worker cleanup, session killing, routine nudging (Witness handles that)
 **Exception**: If refinery/witness is stuck, nudge the concrete rig-scoped session,
@@ -272,7 +275,7 @@ Rigs start **dormant by default** (`--start-suspended`). The Mayor activates
 rigs when work is ready and suspends them when idle.
 
 ```bash
-# Activate a dormant rig — starts its witness + refinery
+# Activate a dormant rig — starts its witness + refinery (which never merges autonomously)
 {{ cmd }} rig resume <rig>
 
 # Suspend a rig — daemon skips it, agents wind down

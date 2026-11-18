@@ -23,7 +23,7 @@ usage() {
 usage:
   gc firstmate decide --kind approve|merge|pick --what TEXT --you-do TEXT \
       --why-blocked TEXT --artifact TEXT --stakes TEXT \
-      [--key KEY] [--blocks WORK_BEAD_ID] [--rig RIG]
+      --key KEY [--blocks WORK_BEAD_ID] [--rig RIG]
   gc firstmate decide list [--all] [--rig RIG]
 EOF
     exit 2
@@ -57,6 +57,16 @@ need_value() {
 blank() {
     # true when the value is empty or whitespace only
     [ -z "$(printf '%s' "$1" | tr -d '[:space:]')" ]
+}
+
+bare_pr_reference() {
+    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
+}
+
+pr_reference_without_https_url() {
+    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)' || return 1
+    printf '%s' "$1" | grep -Eq 'https://[^[:space:]]+' || return 0
+    return 1
 }
 
 # ---- list ------------------------------------------------------------------
@@ -121,30 +131,35 @@ for pair in "WHAT:$WHAT" "WHAT YOU DO (--you-do):$YOU_DO" "WHY BLOCKED (--why-bl
     fi
 done
 
+[ -n "$KEY" ] || die "--key is required; every decision needs a stable key"
+
 # ARTIFACT must be something the captain can open, not a bare number.
 if printf '%s' "$ARTIFACT" | grep -Eq '^[[:space:]]*#?[0-9]+[[:space:]]*$'; then
     die "ARTIFACT must be a full URL or path, not a bare number ('$ARTIFACT')"
 fi
 
-if [ -n "$KEY" ]; then
-    case "$KEY" in
-        *[!A-Za-z0-9._-]*) die "--key may contain only letters, digits, '.', '_' and '-'" ;;
-    esac
-fi
+case "$KEY" in
+    *[!A-Za-z0-9._-]*) die "--key may contain only letters, digits, '.', '_' and '-'" ;;
+esac
+
+for pair in "WHAT:$WHAT" "WHAT YOU DO (--you-do):$YOU_DO" "WHY BLOCKED (--why-blocked):$WHY" "ARTIFACT:$ARTIFACT" "STAKES:$STAKES"; do
+    name=${pair%%:*}
+    value=${pair#*:}
+    if bare_pr_reference "$value" || pr_reference_without_https_url "$value"; then
+        die "$name must use a full https URL for every PR reference"
+    fi
+done
 
 need_jq
 
-# Idempotency: an open decision with the same key is returned, not re-filed.
-if [ -n "$KEY" ]; then
-    existing=$(gcbd list --label "$LABEL" --label "decision-key:$KEY" --json --limit 0) \
-        || die "could not read the ledger to check for key '$KEY'"
-    [ -n "$existing" ] || die "ledger read returned nothing (is the store reachable?)"
-    found=$(printf '%s' "$existing" | jq -r '.[0].id // empty') \
-        || die "unexpected ledger payload while checking key '$KEY'"
-    if [ -n "$found" ]; then
-        echo "EXISTING DECISION: $found (still open, key '$KEY'). Not filed again."
-        exit 0
-    fi
+existing=$(gcbd list --label "$LABEL" --label "decision-key:$KEY" --json --limit 0) \
+    || die "could not read the ledger to check for key '$KEY'"
+[ -n "$existing" ] || die "ledger read returned nothing (is the store reachable?)"
+found=$(printf '%s' "$existing" | jq -r '.[0].id // empty') \
+    || die "unexpected ledger payload while checking key '$KEY'"
+if [ -n "$found" ]; then
+    echo "EXISTING DECISION: $found (still open, key '$KEY'). Not filed again."
+    exit 0
 fi
 
 first_line=$(printf '%s' "$WHAT" | head -n 1 | cut -c1-100)
@@ -154,9 +169,7 @@ body=$(printf 'WHAT: %s\nWHAT YOU DO: %s\nWHY BLOCKED: %s\nARTIFACT: %s\nSTAKES:
     "$WHAT" "$YOU_DO" "$WHY" "$ARTIFACT" "$STAKES" "$GC_AGENT")
 
 labels="$LABEL,decision-kind:$KIND"
-if [ -n "$KEY" ]; then
-    labels="$labels,decision-key:$KEY"
-fi
+labels="$labels,decision-key:$KEY"
 
 if [ -n "$BLOCKS" ]; then
     id=$(gcbd create "$title" --description "$body" --labels "$labels" \

@@ -5,8 +5,9 @@ Mayor**: it works inside Gas City's rules, and adds the two things Gas City's
 Mayor lacks. Those are a communication contract for talking to the human (the
 "captain") and a durable decision ledger.
 
-Everything else is gastown, unchanged: deacon, boot, witness, refinery,
-polecats, formulas, orders.
+Everything else is gastown: deacon, boot, witness, refinery, polecats,
+formulas, orders. The captain alone owns merging; the refinery never merges on
+its own.
 
 > **Status: v0.1.0, static checks only.** The files parse and the scripts pass
 > `shellcheck`. The decision commands were exercised against a stand-in for
@@ -29,7 +30,11 @@ Two things to do by hand (both **unverified**, see below):
 
 1. **Import firstmate instead of gastown, not alongside it.** firstmate
    already imports gastown. Importing both would give you two of every role.
-2. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
+2. **Set merge ownership before attaching any rig.** The captain is the sole
+   merge owner. The refinery must never merge autonomously: when a change is
+   ready, it routes it through a `merge` decision filed with `gc firstmate
+   decide`, then the captain merges after answering the recorded decision.
+3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
    come from imports at the rig level:
 
    ```toml
@@ -69,7 +74,7 @@ asked. The Mayor prompt requires this
 ```bash
 gc firstmate decide --kind merge --key pr-login-fix \
   --what "Merge the login fix?" \
-  --you-do "Open the PR and click Merge, or reply 'hold'." \
+  --you-do "Open the linked change and click Merge, or reply 'hold'." \
   --why-blocked "Only the captain merges." \
   --artifact "https://github.com/org/repo/pull/12" \
   --stakes "Login stays broken for new users until merged; merge is revertable."
@@ -78,15 +83,16 @@ gc firstmate decide list            # what is waiting on the captain
 gc firstmate resolve <id> --answer "merge it"   # record the answer and close
 ```
 
-- The bead carries labels `firstmate-decision`, `decision-kind:<kind>` and,
-  with `--key`, `decision-key:<key>`. The description holds the five fields
+- The bead carries labels `firstmate-decision`, `decision-kind:<kind>` and
+  `decision-key:<key>`. The description holds the five fields
   **WHAT / WHAT YOU DO / WHY BLOCKED / ARTIFACT / STAKES**.
 - `--kind` is a closed vocabulary: `approve`, `merge`, `pick`. Anything else is
   refused, since it is not a captain decision.
 - A filing with any field missing or blank is refused. An `ARTIFACT` that is a
-  bare number (`#11`) is refused.
-- `--key` makes filing idempotent: an open decision with the same key is
-  returned instead of filed twice.
+  bare number (`#11`) is refused, and every PR reference in all five fields
+  must be a full HTTPS URL.
+- `--key` is required and makes filing idempotent: an open decision with the
+  same key is returned instead of filed twice.
 - `--blocks <work-bead>` makes the work depend on the decision.
 - `resolve` records the answer as a comment first, then closes. It refuses ids
   that are not ledger decisions or are already resolved, and it matches ids
@@ -222,9 +228,6 @@ These are known gaps, left for later:
   guards filing, not authority.
 - **Refuse-on-unlanded teardown.** Refusing to tear down a worker's workspace
   while it holds uncommitted or unmerged work.
-- **A merge-owner decision.** Gas City's refinery and a human-run merge are two
-  merge authorities. Which one owns merging must be decided before projects are
-  attached. v0 simply routes `merge` decisions to the captain.
 - **Scouts: the Mayor launching read-only workers.** A scout is a worker whose
   deliverable is a **report, not a PR**, and which never writes to the project
   it studies. The Mayor must be able to launch one, and **may not relay a

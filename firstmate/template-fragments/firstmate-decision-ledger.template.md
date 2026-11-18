@@ -27,21 +27,21 @@ Every decision carries all five. The command refuses a filing with any missing.
 | Field | Contents |
 |-------|----------|
 | `WHAT` | The decision, one plain sentence ending in a question mark. |
-| `WHAT YOU DO` | The exact action the captain takes ("Reply `merge` or `hold`", "Click Merge on the PR"). |
+| `WHAT YOU DO` | The exact action the captain takes ("Reply `merge` or `hold`", "Click Merge on the linked change"). |
 | `WHY BLOCKED` | Why this cannot proceed without them (authority, irreversible, taste). |
-| `ARTIFACT` | The thing to look at: a full URL or path. Never a bare number. |
+| `ARTIFACT` | The thing to look at: a full URL or path. Never a bare number. Every PR reference in any field must be a full HTTPS URL. |
 | `STAKES` | What waiting costs, what a wrong answer costs, and whether it can be undone. |
 
 ### Procedure
 
 1. **Check what is already open.** `{{ cmd }} {{ $fm }} decide list`. Do not ask the
    captain something they have already been asked.
-2. **File it.** Give a stable `--key` so a retry cannot create a duplicate:
+2. **File it.** `--key` is required; give it a stable value so a retry cannot create a duplicate:
 
    ```bash
    {{ cmd }} {{ $fm }} decide --kind merge --key "pr-login-fix" \
      --what "Merge the login fix?" \
-     --you-do "Open the PR and click Merge, or reply 'hold'." \
+     --you-do "Open the linked change and click Merge, or reply 'hold'." \
      --why-blocked "Only the captain merges." \
      --artifact "https://github.com/org/repo/pull/12" \
      --stakes "Login stays broken for new users until merged; merge is revertable." \
