@@ -105,6 +105,24 @@ expect_refusal 'full https URL' \
     --you-do 'Open the PR and merge it.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
+expect_malformed_pr_refusal() {
+    field=$1
+    value=$2
+    case "$field" in
+        what) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what "$value?" --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do "$value" --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked "$value" --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact "$value" --stakes 'The fix remains unavailable.' ;;
+        stakes) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes "$value" ;;
+    esac
+}
+
+for malformed in 'PR: https://' 'Merge PR: https://?' 'PR https:///x' 'PR https://?x' 'PR https://#12'; do
+    for field in what you-do why-blocked artifact stakes; do
+        expect_malformed_pr_refusal "$field" "$malformed"
+    done
+done
+
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
         what) set -- --kind merge --key merge-login-fix --what 'Pull request #12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
