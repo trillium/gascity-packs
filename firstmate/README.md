@@ -159,6 +159,21 @@ firstmate/
     └── resolve/{run.sh,help.md}
 ```
 
+### Roadmap layout: where scouts drop in
+
+The layout leaves room for scouts (see "Deliberately not in v0") without moving
+anything. Each addition is a new file or directory in a conventional location:
+
+```text
+firstmate/
+├── formulas/scout.toml                     # the scout formula (no [formulas].dir needed)
+├── commands/scout/{run.sh,help.md}         # gc firstmate scout ...: launch, check, relay
+└── template-fragments/firstmate-scouts.template.md   # Mayor rules for scouts,
+                                            # pulled into assets/prompts/mayor.template.md
+```
+
+Nothing in `pack.toml` has to change for the formula and command to load.
+
 ## Verified vs unverified
 
 **Verified (static):**
@@ -210,6 +225,16 @@ These are known gaps, left for later:
 - **A merge-owner decision.** Gas City's refinery and a human-run merge are two
   merge authorities. Which one owns merging must be decided before projects are
   attached. v0 simply routes `merge` decisions to the captain.
+- **Scouts: the Mayor launching read-only workers.** A scout is a worker whose
+  deliverable is a **report, not a PR**, and which never writes to the project
+  it studies. The Mayor must be able to launch one, and **may not relay a
+  scout's result to the captain until a completion gate passes** (the report
+  exists and was checked, not just a status line saying so). This is a
+  roadmap item for a later version, not part of v0. It will arrive as a
+  `scout` formula, a `gc firstmate scout` command and a Mayor-prompt
+  fragment; the files go in the places shown under
+  [Roadmap layout](#roadmap-layout-where-scouts-drop-in), so nothing in v0
+  needs restructuring.
 - **Proof that the answer came from the captain.** `resolve` records whatever
   `--answer` it is given; v0 relies on the prompt rule that it be the
   captain's own words.
