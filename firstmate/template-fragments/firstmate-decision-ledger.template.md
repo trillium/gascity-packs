@@ -39,7 +39,7 @@ Every decision carries all five. The command refuses a filing with any missing.
 2. **File it.** `--key` is required; give it a stable value so a retry cannot create a duplicate:
 
    ```bash
-   {{ cmd }} {{ $fm }} decide --kind merge --key "pr-login-fix" \
+   {{ cmd }} {{ $fm }} decide --kind merge --key "pr-login-fix" --binding "{{ $fm }}" \
      --what "Merge the login fix?" \
      --you-do "Open the linked change and click Merge, or reply 'hold'." \
      --why-blocked "Only the captain merges." \
@@ -59,12 +59,12 @@ Every decision carries all five. The command refuses a filing with any missing.
    their own words:
 
    ```bash
-   {{ cmd }} {{ $fm }} resolve <decision-id> --answer "<what the captain said, verbatim>" --outcome approve|hold
+   {{ cmd }} {{ $fm }} resolve <decision-id> --answer "<what the captain said, verbatim>" --outcome approve
    ```
 
    For a `merge` decision, this records the answer and an explicit `approve` or
-   `hold` outcome before closing it. Only `approve` authorizes that exact change
-   to land; `hold` keeps it unlanded. A decision with no recorded answer is
+   `hold` outcome before closing it. Use `--outcome approve` to authorize that
+   exact change to land, or `--outcome hold` to keep it unlanded. A decision with no recorded answer is
    still open, even if the captain seemed to agree in passing. Never write an
    answer the captain did not give, and never resolve a decision with your own
    judgment.

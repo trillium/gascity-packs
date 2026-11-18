@@ -42,16 +42,17 @@ expect_refusal() {
 
 MERGE_OPEN='[{"id":"d-merge","status":"open","labels":["firstmate-decision","decision-kind:merge"]}]'
 MERGE_CLOSED='[{"id":"d-merge","status":"closed","labels":["firstmate-decision","decision-kind:merge"]}]'
+APPROVE_OPEN='[{"id":"d-approve","status":"open","labels":["firstmate-decision","decision-kind:approve"]}]'
 
 expect_refusal 'not a decision in the ledger' '[]' missing --answer 'no' --outcome hold
-expect_refusal '--outcome approve|hold is required' "$MERGE_OPEN" d-merge --answer 'hold it'
+expect_refusal '--outcome is required' "$MERGE_OPEN" d-merge --answer 'hold it'
 expect_refusal '--outcome must be approve or hold' "$MERGE_OPEN" d-merge --answer 'merge it' --outcome later
 expect_refusal 'already resolved' "$MERGE_CLOSED" d-merge --answer 'merge it' --outcome approve
 
 : >"$LOG"
 output=$(run "$MERGE_OPEN" d-merge --answer 'hold it' --outcome hold)
 case "$output" in
-    *'DECISION RESOLVED: d-merge'*'Recorded outcome: hold'*) ;;
+    *'DECISION RESOLVED: d-merge'*'Recorded outcome: hold'*'Hold recorded: keep this change unlanded and stop.'*) ;;
     *) echo "hold outcome was not recorded: $output" >&2; exit 1 ;;
 esac
 grep -F 'OUTCOME: hold' "$LOG" >/dev/null
@@ -59,7 +60,14 @@ grep -F 'OUTCOME: hold' "$LOG" >/dev/null
 : >"$LOG"
 output=$(run "$MERGE_OPEN" d-merge --answer 'merge it' --outcome approve)
 case "$output" in
-    *'DECISION RESOLVED: d-merge'*'Recorded outcome: approve'*) ;;
+    *'DECISION RESOLVED: d-merge'*'Recorded outcome: approve'*'Approval recorded: this exact change may proceed to landing.'*) ;;
     *) echo "approve outcome was not recorded: $output" >&2; exit 1 ;;
 esac
 grep -F 'OUTCOME: approve' "$LOG" >/dev/null
+
+output=$(run "$APPROVE_OPEN" d-approve --answer 'yes')
+case "$output" in
+    *'DECISION RESOLVED: d-approve'*'Now act on it, and tell the captain what changed (outcome first).'*'Recorded outcome:'*) echo "non-merge resolution included outcome guidance: $output" >&2; exit 1 ;;
+    *'DECISION RESOLVED: d-approve'*'Now act on it, and tell the captain what changed (outcome first).'*) ;;
+    *) echo "non-merge resolution did not provide ordinary guidance: $output" >&2; exit 1 ;;
+esac

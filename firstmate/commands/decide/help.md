@@ -6,7 +6,7 @@ File a decision that needs the captain, in the decision ledger. File it here
 ```text
 gc firstmate decide --kind approve|merge|pick --what TEXT --you-do TEXT \
     --why-blocked TEXT --artifact TEXT --stakes TEXT \
-    --key KEY [--blocks WORK_BEAD_ID] [--rig RIG]
+    --key KEY [--binding BINDING] [--blocks WORK_BEAD_ID] [--rig RIG]
 gc firstmate decide list [--all] [--rig RIG]
 ```
 
@@ -33,15 +33,17 @@ digits, `.`, `_` and `-`.
 `--blocks WORK_BEAD_ID` makes that work item depend on the decision, so it is
 not picked up until the decision is closed.
 
+`--binding BINDING` selects the import binding for the printed resolve hint.
+It defaults to `firstmate`; BINDING must be a plain identifier.
+
 `--rig` files (or lists) in that rig's store instead of the city's. With no
 flag, `GC_RIG` is used when set; otherwise the city store.
 
 `list` prints open decisions oldest first as `id`, `status`, `title`;
 `--all` includes resolved ones.
 
-Close a decision with `gc firstmate resolve`; a `merge` decision also requires
-`--outcome approve|hold`. If the pack was imported under a different binding
-name, replace `firstmate` with that name.
+Close a decision with `gc firstmate resolve`. For a `merge` decision, use one
+of `--outcome approve` or `--outcome hold`; other decision kinds omit it.
 
 Environment variables set by gc:
   GC_BIN         Path to the gc binary

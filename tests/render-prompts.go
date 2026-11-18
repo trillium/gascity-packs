@@ -47,7 +47,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: render-prompts ROOT GASTOWN_FRAGMENTS")
 		os.Exit(2)
 	}
-	for _, bindingName := range []string{"firstmate", ""} {
+	for _, bindingName := range []string{"helm", ""} {
 		mayor, err := render(os.Args[1], os.Args[2], "mayor.template.md", bindingName)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -60,6 +60,14 @@ func main() {
 		}
 		if !strings.Contains(mayor, "the captain is the sole merge owner") {
 			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits captain-only merge ownership")
+			os.Exit(1)
+		}
+		binding := bindingName
+		if binding == "" {
+			binding = "firstmate"
+		}
+		if !strings.Contains(mayor, "gc "+binding+" decide --binding "+binding) {
+			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits its decide binding")
 			os.Exit(1)
 		}
 		if !strings.Contains(mayor, "only `approve` authorizes that exact change to land, while `hold` leaves it unlanded") {

@@ -1,6 +1,6 @@
 #!/bin/sh
 # firstmate resolve - record the captain's answer to a decision and close it.
-# Invoked as: gc firstmate resolve ID --answer "the captain's words" [--outcome approve|hold]
+# Invoked as: gc firstmate resolve ID --answer "the captain's words" [--outcome OUTCOME]
 #
 # Environment (set by gc):
 #   GC_BIN    - path to the gc binary (falls back to `gc` on PATH)
@@ -19,7 +19,7 @@ RIG="${GC_RIG:-}"
 
 usage() {
     cat >&2 <<'EOF'
-usage: gc firstmate resolve ID --answer "what the captain said" [--outcome approve|hold] [--rig RIG]
+usage: gc firstmate resolve ID --answer "what the captain said" [--outcome OUTCOME] [--rig RIG]
 EOF
     exit 2
 }
@@ -91,7 +91,7 @@ case "$is_merge" in
     true)
         case "$OUTCOME" in
             approve|hold) ;;
-            "") die "--outcome approve|hold is required for a merge decision" ;;
+            "") die "--outcome is required for a merge decision; use approve or hold" ;;
             *) die "--outcome must be approve or hold for a merge decision" ;;
         esac
         ;;
@@ -122,4 +122,8 @@ echo "Recorded answer: $ANSWER"
 if [ "$is_merge" = true ]; then
     echo "Recorded outcome: $OUTCOME"
 fi
-echo "Now act on it, and tell the captain what changed (outcome first)."
+case "$is_merge:$OUTCOME" in
+    true:approve) echo "Approval recorded: this exact change may proceed to landing." ;;
+    true:hold) echo "Hold recorded: keep this change unlanded and stop." ;;
+    false:) echo "Now act on it, and tell the captain what changed (outcome first)." ;;
+esac

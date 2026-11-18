@@ -40,7 +40,7 @@ this one.
 If there is no matching resolved decision with the captain's recorded answer
 and outcome `approve`:
 1. Stop. Do not merge or take any action that lands the change.
-2. File the decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --kind merge --key "<stable-change-key>" ...`, including the exact change and full HTTPS URL in its fields.
+2. File the decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --kind merge --key "<stable-change-key>" ...`, including the exact change and full HTTPS URL in its fields.
 3. Keep the work blocked and surface the filed decision to the captain. Resume
    only after `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <decision-id> --answer "<captain's words>" --outcome approve` records their answer and approval. If the outcome is `hold`, keep the change unlanded and stop.
 

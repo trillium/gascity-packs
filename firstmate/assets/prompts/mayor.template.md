@@ -263,7 +263,7 @@ than printing the bare word `null` for you to misread as a recorded decision.
   (see "Decision Ledger" above). You decide everything else yourself.
 - **Merge ownership** (FIRSTMATE): the captain is the sole merge owner. The
   refinery must never merge autonomously. When a change is ready, file a
-  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide` before messaging the captain. Record their answer with `resolve --outcome approve|hold`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded.
+  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }}` before messaging the captain. Record their answer with either `resolve --outcome approve` or `resolve --outcome hold`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded.
 
 **NOT your job**: Per-worker cleanup, session killing, routine nudging (Witness handles that)
 **Exception**: If refinery/witness is stuck, nudge the concrete rig-scoped session,
@@ -345,8 +345,8 @@ for, each one filed in the ledger first.
 | Create convoy for batch work | `{{ cmd }} convoy create "name" <issues>` | |
 | View convoy progress | `{{ cmd }} convoy status <id>` | |
 | Create issues | `gc bd create "title"` | ~~gc issue create~~ (not a command) |
-| Ask the captain to approve / merge / pick (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --kind ...` FIRST, then message | ~~asking in chat with nothing filed~~ |
-| Record the captain's answer (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <id> --answer "<their words>" --outcome approve\|hold` for merge decisions | ~~acting on a chat reply without recording it~~ |
+| Ask the captain to approve / merge / pick (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --kind ...` FIRST, then message | ~~asking in chat with nothing filed~~ |
+| Record the captain's answer (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <id> --answer "<their words>" --outcome approve` or `--outcome hold` for merge decisions | ~~acting on a chat reply without recording it~~ |
 
 
 Town root: {{ .CityRoot }}

@@ -77,7 +77,7 @@ asked. The Mayor prompt requires this
 (`template-fragments/firstmate-decision-ledger.template.md`).
 
 ```bash
-gc firstmate decide --kind merge --key pr-login-fix \
+gc firstmate decide --kind merge --key pr-login-fix --binding firstmate \
   --what "Merge the login fix?" \
   --you-do "Open the linked change and click Merge, or reply 'hold'." \
   --why-blocked "Only the captain merges." \
@@ -99,9 +99,11 @@ gc firstmate resolve <id> --answer "merge it" --outcome approve   # record appro
 - `--key` is required and makes filing idempotent: an open decision with the
   same key is returned instead of filed twice.
 - `--blocks <work-bead>` makes the work depend on the decision.
+- `--binding <import-binding>` controls the resolve hint printed after filing;
+  it defaults to `firstmate` and must be a plain identifier.
 - `resolve` records the answer as a comment first, then closes. A `merge`
-  decision also requires `--outcome approve|hold`; only `approve` lets the
-  refinery land that exact change, while `hold` keeps it unlanded. It refuses
+  decision also requires either `--outcome approve` or `--outcome hold`; only
+  `approve` lets the refinery land that exact change, while `hold` keeps it unlanded. It refuses
   ids that are not ledger decisions or are already resolved, and it matches ids
   exactly (plain `gc bd` fuzzy-matches).
 

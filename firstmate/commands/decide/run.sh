@@ -6,7 +6,7 @@
 #   GC_BIN         - path to the gc binary (falls back to `gc` on PATH)
 #   GC_AGENT       - the calling agent (required: refuses unowned filings)
 #   GC_RIG         - rig scope, when running from a rig agent (optional)
-#   GC_CITY_PATH, GC_PACK_DIR, GC_PACK_NAME, GC_CITY_NAME - see gc docs
+#   GC_CITY_PATH, GC_PACK_DIR, GC_CITY_NAME - see gc docs
 #
 # A decision is a bead labeled `firstmate-decision` whose description holds
 # five fields: WHAT / WHAT YOU DO / WHY BLOCKED / ARTIFACT / STAKES.
@@ -17,14 +17,14 @@ set -eu
 LABEL="firstmate-decision"
 GC="${GC_BIN:-gc}"
 RIG="${GC_RIG:-}"
-PACK_BINDING="${GC_PACK_NAME:-firstmate}"
+BINDING="firstmate"
 
 usage() {
     cat >&2 <<'EOF'
 usage:
   gc firstmate decide --kind approve|merge|pick --what TEXT --you-do TEXT \
       --why-blocked TEXT --artifact TEXT --stakes TEXT \
-      --key KEY [--blocks WORK_BEAD_ID] [--rig RIG]
+      --key KEY [--binding BINDING] [--blocks WORK_BEAD_ID] [--rig RIG]
   gc firstmate decide list [--all] [--rig RIG]
 EOF
     exit 2
@@ -61,13 +61,30 @@ blank() {
 }
 
 bare_pr_reference() {
-    printf '%s' "$1" | grep -Eq '#[0-9]+|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
+    printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])#[0-9]+|(^|[[:space:]])[A-Za-z0-9_-]+/[A-Za-z0-9._-]+#[0-9]+([[:space:].,?)]|$)|[Pp][Rr][[:space:]]*#?[[:space:]]*[0-9]+|[Pp]ull[[:space:]]+[Rr]equest[[:space:]]*#?[[:space:]]*[0-9]+'
 }
 
 pr_reference_without_https_url() {
     printf '%s' "$1" | grep -Eq '(^|[^[:alnum:]_])[Pp][Rr]([^[:alnum:]_]|$)|[Pp]ull[[:space:]]+[Rr]equest([^[:alnum:]_]|$)' || return 1
     printf '%s' "$1" | grep -Eq 'https://[^[:space:]]+' || return 0
     return 1
+}
+
+pr_url_without_https() {
+    printf '%s\n' "$1" | awk '
+        {
+            rest = $0
+            while (match(rest, /[^[:space:]]*\/pull\/[0-9]+/)) {
+                url = substr(rest, RSTART, RLENGTH)
+                if (url !~ /^https:\/\//) {
+                    bad = 1
+                    exit
+                }
+                rest = substr(rest, RSTART + RLENGTH)
+            }
+        }
+        END { exit bad ? 0 : 1 }
+    '
 }
 
 # ---- list ------------------------------------------------------------------
@@ -109,6 +126,7 @@ while [ $# -gt 0 ]; do
         --artifact)    need_value "$1" "$#"; ARTIFACT=$2; shift 2 ;;
         --stakes)      need_value "$1" "$#"; STAKES=$2; shift 2 ;;
         --key)         need_value "$1" "$#"; KEY=$2; shift 2 ;;
+        --binding)     need_value "$1" "$#"; BINDING=$2; shift 2 ;;
         --blocks)      need_value "$1" "$#"; BLOCKS=$2; shift 2 ;;
         --rig)         need_value "$1" "$#"; RIG=$2; shift 2 ;;
         *) echo "decide: unknown argument: $1" >&2; usage ;;
@@ -148,10 +166,14 @@ case "$KEY" in
     *[!A-Za-z0-9._-]*) die "--key may contain only letters, digits, '.', '_' and '-'" ;;
 esac
 
+case "$BINDING" in
+    ""|[!A-Za-z]*|*[!A-Za-z0-9_-]*) die "--binding must be a non-empty plain identifier" ;;
+esac
+
 for pair in "WHAT:$WHAT" "WHAT YOU DO (--you-do):$YOU_DO" "WHY BLOCKED (--why-blocked):$WHY" "ARTIFACT:$ARTIFACT" "STAKES:$STAKES"; do
     name=${pair%%:*}
     value=${pair#*:}
-    if bare_pr_reference "$value" || pr_reference_without_https_url "$value"; then
+    if bare_pr_reference "$value" || pr_reference_without_https_url "$value" || pr_url_without_https "$value"; then
         die "$name must use a full https URL for every PR reference"
     fi
 done
@@ -200,5 +222,15 @@ WHY BLOCKED: $WHY
 ARTIFACT: $ARTIFACT
 STAKES: $STAKES
 
-When they answer: gc $PACK_BINDING resolve $id --answer "<their words>" --outcome approve|hold (required for merge decisions)
 EOF
+if [ "$KIND" = merge ]; then
+    cat <<EOF
+When they answer, record one of these exact outcomes:
+  gc $BINDING resolve $id --answer "<their words>" --outcome approve
+  gc $BINDING resolve $id --answer "<their words>" --outcome hold
+EOF
+else
+    cat <<EOF
+When they answer: gc $BINDING resolve $id --answer "<their words>"
+EOF
+fi
