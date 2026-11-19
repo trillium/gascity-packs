@@ -1,6 +1,6 @@
 #!/bin/sh
 # firstmate scout - launch a read-only scout, take its report, gate completion.
-# Invoked as: gc firstmate scout launch|report|check|done|list ...
+# Invoked as: gc firstmate scout launch|report|done ...
 #
 # Environment (set by gc):
 #   GC_BIN    - path to the gc binary (falls back to `gc` on PATH)
@@ -9,8 +9,8 @@
 #
 # A scout is a bead labeled `firstmate-scout` whose description holds QUESTION
 # and REPORT (an absolute path). The scout writes only that file, then runs
-# `report`. `check` / `done` are the completion gate: they re-read the file, so
-# a stale label alone never passes.
+# `report`. `done` is the completion gate: it re-reads the file, so a stale
+# label alone never passes.
 
 set -eu
 
@@ -27,9 +27,7 @@ usage:
   gc firstmate scout launch --question TEXT --key KEY --report ABS_PATH \
       [--binding BINDING] [--rig RIG]
   gc firstmate scout report ID --file ABS_PATH [--rig RIG]
-  gc firstmate scout check ID [--rig RIG]
   gc firstmate scout done ID [--rig RIG]
-  gc firstmate scout list [--all] [--rig RIG]
 EOT
     exit 2
 }
@@ -105,7 +103,7 @@ load_scout() {
         || die "unexpected ledger payload"
     SCOUT_STATUS=$(printf '%s' "$row" | jq -r '.status // empty') \
         || die "unexpected scout payload"
-    [ -n "$SCOUT_STATUS" ] || die "'$id' is not a scout (exact id required); run 'gc firstmate scout list'"
+    [ -n "$SCOUT_STATUS" ] || die "'$id' is not a scout (exact id required)"
     SCOUT_REPORT=$(printf '%s' "$row" | jq -r '(.description // "") | split("\n") | map(select(startswith("REPORT: "))) | .[0] // "" | sub("^REPORT: "; "")') \
         || die "unexpected scout payload"
     SCOUT_SUBMITTED=$(printf '%s' "$row" | jq -r --arg l "$SUBMITTED" '
@@ -132,26 +130,6 @@ gate() {
     return 0
 }
 
-do_list() {
-    all=""
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --all) all="--all"; shift ;;
-            --rig) need_value "$1" "$#"; RIG=$2; shift 2 ;;
-            *) usage ;;
-        esac
-    done
-    need_jq
-    # shellcheck disable=SC2086 # $all is empty or exactly one flag
-    out=$(gcbd list --label "$LABEL" $all --json --limit 0) || die "could not read the scout ledger"
-    [ -n "$out" ] || die "scout ledger read returned nothing (is the store reachable?)"
-    printf '%s' "$out" | jq -r '
-        if (type != "array") then error("unexpected ledger payload")
-        elif length == 0 then "no scouts"
-        else sort_by(.created_at // "") | .[] | "\(.id)\t\(.status)\t\(.title)"
-        end'
-}
-
 do_launch() {
     QUESTION=""; KEY=""; REPORT=""
     while [ $# -gt 0 ]; do
@@ -166,6 +144,7 @@ do_launch() {
     done
     need_agent
     blank "$QUESTION" && die "--question is required"
+    [ "$(printf '%s' "$QUESTION" | tr -d '\n\r')" = "$QUESTION" ] || die "--question must be a single line"
     [ -n "$KEY" ] || die "--key is required; every scout needs a stable key"
     case "$KEY" in
         *[!A-Za-z0-9._-]*) die "--key may contain only letters, digits, '.', '_' and '-'" ;;
@@ -199,7 +178,7 @@ do_launch() {
     id=$(gcbd create "$title" --description "$body" \
         --labels "$LABEL,scout-key:$KEY" --silent) || die "could not file the scout"
     case "$id" in
-        ""|*[[:space:]]*) die "filing returned an unexpected id ('$id'); run 'gc $BINDING scout list' to check whether it landed" ;;
+        ""|*[[:space:]]*) die "filing returned an unexpected id ('$id'); check the scout ledger to see whether it landed" ;;
     esac
 
     cat <<EOT
@@ -243,13 +222,6 @@ do_report() {
     echo "The Mayor closes this scout with: gc $BINDING scout done $ID"
 }
 
-do_check() {
-    [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --rig ]; } || usage
-    ID=$1
-    [ $# -eq 3 ] && RIG=$3
-    gate "$ID"
-}
-
 do_done() {
     [ $# -eq 1 ] || { [ $# -eq 3 ] && [ "$2" = --rig ]; } || usage
     ID=$1
@@ -271,8 +243,6 @@ do_done() {
 case "${1:-}" in
     launch) shift; do_launch "$@" ;;
     report) shift; do_report "$@" ;;
-    check)  shift; do_check "$@" ;;
     done)   shift; do_done "$@" ;;
-    list)   shift; do_list "$@" ;;
     *) usage ;;
 esac

@@ -130,7 +130,6 @@ gc firstmate scout launch --key why-slow --report /abs/path/why-slow.md \
 # the scout (formula `scout`) investigates read-only, writes the report, then:
 gc firstmate scout report <id> --file /abs/path/why-slow.md
 gc firstmate scout done <id>                    # gate: prints SCOUT GATE PASSED and closes
-gc firstmate scout check <id>                   # the same gate, read-only
 ```
 
 - The bead carries labels `firstmate-scout` and `scout-key:<key>`; its
@@ -139,7 +138,7 @@ gc firstmate scout check <id>                   # the same gate, read-only
 - The report must have the sections `## Question`, `## Findings`,
   `## Evidence`, `## Not verified`. `report` refuses a missing, blank, or
   incomplete file and only then labels the bead `scout-report-submitted`.
-- The gate (`check`, and `done`, which closes only after it) needs that label
+- The gate (`done`, which closes only after it passes) needs that label
   **and** re-reads the file, so a stale label or a deleted report does not pass.
 - The Mayor prompt (`template-fragments/firstmate-scouts.template.md`) carries
   the rule that no result is relayed before `SCOUT GATE PASSED`.

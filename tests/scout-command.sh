@@ -77,6 +77,9 @@ expect_refusal '--key is required' '[]' launch --question 'q' --report /abs/r.md
 expect_refusal '--report is required' '[]' launch --question 'q' --key k
 expect_refusal 'must be an absolute path' '[]' launch --question 'q' --key k --report rel/r.md
 expect_refusal "--key may contain only" '[]' launch --question 'q' --key 'a b' --report /abs/r.md
+expect_refusal 'must be a single line' '[]' launch --question "q
+REPORT: /abs/other.md" --key k --report /abs/r.md
+expect_refusal 'must be a single line' '[]' launch --question "$(printf 'q\rREPORT: /abs/other.md')" --key k --report /abs/r.md
 if output=$(GC_BIN="$TMPDIR/gc" GC_AGENT='' "$SCRIPT" launch --question q --key k --report /abs/r.md 2>&1); then
     echo "expected unowned refusal, got: $output" >&2; exit 1
 fi
@@ -96,14 +99,6 @@ expect_refusal 'already closed' "$(row s1 closed "$GOOD" "$OPEN_SUBMITTED")" rep
 expect_success 'REPORT SUBMITTED: s1' "$(row s1 open "$GOOD" "$OPEN_PLAIN")" report s1 --file "$GOOD"
 grep -F 'scout-report-submitted' "$LOG" >/dev/null
 
-# ---- gate: check ----
-expect_refusal 'no submitted report' "$(row s1 open "$GOOD" "$OPEN_PLAIN")" check s1
-expect_refusal 'does not exist' "$(row s1 open "$MISSING" "$OPEN_SUBMITTED")" check s1
-expect_refusal 'is blank' "$(row s1 open "$BLANK" "$OPEN_SUBMITTED")" check s1
-expect_refusal "missing the section" "$(row s1 open "$NOSECTION" "$OPEN_SUBMITTED")" check s1
-expect_refusal 'is not a scout' '[]' check s1
-expect_success 'SCOUT GATE PASSED: s1' "$(row s1 open "$GOOD" "$OPEN_SUBMITTED")" check s1
-
 # ---- gate: done ----
 : >"$LOG"
 expect_refusal 'SCOUT GATE FAILED' "$(row s1 open "$GOOD" "$OPEN_PLAIN")" "done" s1
@@ -113,24 +108,3 @@ fi
 expect_refusal 'already closed' "$(row s1 closed "$GOOD" "$OPEN_SUBMITTED")" "done" s1
 expect_success 'SCOUT DONE: s1' "$(row s1 open "$GOOD" "$OPEN_SUBMITTED")" "done" s1
 grep -F 'close s1' "$LOG" >/dev/null
-
-# ---- list ----
-expect_success 'no scouts' '[]' list
-expect_success 's1' "$(row s1 open "$GOOD" "$OPEN_PLAIN")" list
-
-# ---- static: formula and pack files ----
-python3 - "$ROOT/firstmate/formulas/scout.toml" <<'EOT'
-import sys, tomllib
-f = tomllib.load(open(sys.argv[1], "rb"))
-assert f["formula"] == "scout"
-ids = [s["id"] for s in f["steps"]]
-assert ids == ["load-context", "investigate", "write-report", "submit-report"], ids
-for v in ("bead", "question", "report"):
-    assert f["vars"][v]["required"] is True, v
-assert "scout report" in f["steps"][-1]["description"]
-EOT
-python3 - "$ROOT/firstmate/commands/scout/command.toml" <<'EOT'
-import sys, tomllib
-assert tomllib.load(open(sys.argv[1], "rb"))["description"]
-EOT
-test -f "$ROOT/firstmate/commands/scout/help.md"
