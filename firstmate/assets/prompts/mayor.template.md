@@ -265,9 +265,9 @@ than printing the bare word `null` for you to misread as a recorded decision.
 - **Captain-facing decisions** (FIRSTMATE): anything that needs the captain's
   approval, a merge, or a pick is filed in the decision ledger BEFORE you ask
   (see "Decision Ledger" above). You decide everything else yourself.
-- **Merge ownership** (FIRSTMATE): the captain is the sole merge owner. The
+- **Merge ownership** (FIRSTMATE): the captain is the merge owner. The
   refinery must never merge autonomously. When a change is ready, file a
-  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }}` --blocks <work-bead-id> before messaging the captain. Record their answer with either `resolve --outcome approve --captain <captain-id>` or `resolve --outcome hold --captain <captain-id>`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded. The refinery lands only through the scripted `merge-gate`, which refuses without the captain's approval; never write the merge-authority flag yourself.
+  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }}` --blocks <work-bead-id> before messaging the captain. Record their answer with either `resolve --outcome approve --captain <captain-id>` or `resolve --outcome hold --captain <captain-id>`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded. The refinery lands only through the scripted `merge-gate`, which refuses without the recorded approval. It guards against mistakes and is not a security boundary (the captain id is not unforgeable), so never write the merge-authority flag yourself.
 
 **NOT your job**: Per-worker cleanup, session killing, routine nudging (Witness handles that)
 **Exception**: If refinery/witness is stuck, nudge the concrete rig-scoped session,

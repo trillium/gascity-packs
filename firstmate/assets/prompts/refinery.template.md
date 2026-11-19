@@ -20,8 +20,8 @@
 
 ## Firstmate Merge Authority
 
-**The captain is the sole merge owner. A script, not this prompt, decides
-whether a change may land.** The gate is `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} merge-gate`. It
+**The captain is the merge owner. A script, not this prompt, is the
+precondition for landing.** The gate is `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} merge-gate`. It
 checks live state each time it runs: a bound captain, a merge-authority flag on
 this exact work bead, the captain's resolved `approve` decision for it, and
 that the PR is still open, not a draft, green, and at the head the captain
@@ -43,8 +43,9 @@ landing command after `--`:
 `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} merge-gate check "$WORK"` to test without landing. If the
 gate refuses, **do not land by any other route** and do not edit the work
 bead's `merge_authority*` metadata yourself; never run `merge-gate
-bind-captain`. Only `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve` sets that flag, and only for the
-bound captain.
+bind-captain`. `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve` is the only sanctioned way to set that flag. The gate is a
+guard against mistakes, not a security boundary: the captain id is not
+unforgeable, so honor the rule rather than relying on the script to stop you.
 
 If the gate refuses because there is no approval (or the change moved since
 the captain approved it):

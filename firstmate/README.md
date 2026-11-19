@@ -36,7 +36,7 @@ Things to do by hand (all but the import check are **unverified**, see below):
    already imports gastown. Importing both would give you two of every role.
 2. **Bind the captain, then set merge ownership, before attaching any rig.**
    Run `gc firstmate merge-gate bind-captain --id <your-id>` once. The refinery
-   prompt makes the captain the sole merge owner: it must land only through
+   prompt makes the captain the merge owner: it must land only through
    `gc firstmate merge-gate land <work-bead> -- <landing command>`, which runs
    the live checks first. When a change is ready it files a `merge` decision
    (`decide --blocks <work-bead>`); you answer, and the Mayor records it with
@@ -120,7 +120,11 @@ gc firstmate resolve <id> --answer "approve" --outcome approve --captain <id>   
 
 ### 3. Merge gate (`commands/merge-gate`)
 
-Three parts, enforced by script rather than prompt advice alone:
+Three parts in a script the refinery must call. This is a guard against
+accidental and prompt-skipped merges, **not a security boundary**: the bound
+captain id is a plain string, and any agent with `gc bd` access can read it or
+write the `merge_authority*` metadata and `OUTCOME:`/`CAPTAIN:` comment lines
+directly.
 
 - **Bound captain identity.** `merge-gate bind-captain --id X` records the
   captain once (a bead labeled `firstmate-captain`); it refuses to rebind.
@@ -340,6 +344,9 @@ These are known gaps, left for later:
   approval to the captain's id and one work bead, but cannot verify that the
   caller is that person; `--answer` is whatever it is given. The prompt rule
   that it be the captain's own words still applies.
+- **Follow-up: an unforgeable gate.** Hold a secret outside agent-readable
+  paths (not in bead metadata or the environment) and have the script verify it
+  on `resolve` and `check`, instead of trusting a printed captain id.
 
 ## License and upstream
 

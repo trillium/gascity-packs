@@ -1,7 +1,10 @@
 # firstmate merge-gate
 
-The scripted gate between "ready to land" and landing. Nothing lands unless
-this script, re-reading live state, says the captain approved that exact change.
+The scripted gate between "ready to land" and landing. A caller that uses
+this script lands only if it, re-reading live state, finds the captain's
+approval of that exact change. It guards against mistakes; it is not a
+security boundary: the captain id is a plain string, and an agent with `gc bd`
+access can write the metadata and comments it checks.
 
 ```text
 gc firstmate merge-gate bind-captain --id CAPTAIN_ID [--rig RIG]
@@ -33,8 +36,8 @@ right now; otherwise it prints each `REFUSED:` reason and exits 1:
 **land** runs `check`, records a comment on the work bead, then runs the
 command after `--`. If `check` refuses, the command is not started.
 
-**revoke** sets the flag to `revoked`. Anyone may revoke; only `resolve` can
-grant.
+**revoke** sets the flag to `revoked`. Anyone may revoke; `resolve` is the
+intended way to grant.
 
 Environment variables set by gc:
   GC_BIN         Path to the gc binary
