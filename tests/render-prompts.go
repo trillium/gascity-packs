@@ -78,7 +78,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits the scout launch command or completion gate")
 			os.Exit(1)
 		}
-		if !strings.Contains(refinery, "target branch unless a resolved `merge` decision has outcome `approve` for that\nexact change") || !strings.Contains(refinery, "hold`, keep the change unlanded and stop") {
+		if !strings.Contains(refinery, "A script, not this prompt, decides\nwhether a change may land.") || !strings.Contains(refinery, "gc "+binding+" merge-gate land \"$WORK\" -- <the landing command>") || !strings.Contains(refinery, "hold`, keep the change unlanded and stop") {
 			fmt.Fprintln(os.Stderr, "rendered refinery prompt omits the ledger gate")
 			os.Exit(1)
 		}

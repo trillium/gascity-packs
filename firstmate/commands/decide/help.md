@@ -6,7 +6,7 @@ File a decision that needs the captain, in the decision ledger. File it here
 ```text
 gc firstmate decide --kind approve|merge|pick --what TEXT --you-do TEXT \
     --why-blocked TEXT --artifact TEXT --stakes TEXT \
-    --key KEY [--binding BINDING] [--blocks WORK_BEAD_ID] [--rig RIG]
+    --key KEY [--binding BINDING] --blocks WORK_BEAD_ID [--rig RIG]
 gc firstmate decide list [--all] [--rig RIG]
 ```
 
@@ -31,7 +31,9 @@ same key exists, its id is printed and nothing new is filed. Keys use letters,
 digits, `.`, `_` and `-`.
 
 `--blocks WORK_BEAD_ID` makes that work item depend on the decision, so it is
-not picked up until the decision is closed.
+not picked up until the decision is closed. It is required for a `merge`
+decision: the approval is bound to that one work bead (label
+`decision-work:<id>`) and cannot authorize any other.
 
 `--binding BINDING` selects the import binding for the printed resolve hint.
 It defaults to `firstmate`; BINDING must be a plain identifier.
