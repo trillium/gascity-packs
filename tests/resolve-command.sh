@@ -5,32 +5,20 @@ set -eu
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 SCRIPT="$ROOT/firstmate/commands/resolve/run.sh"
 TMPDIR=$(mktemp -d)
-LOG="$TMPDIR/gc.log"
 trap 'rm -rf "$TMPDIR"' EXIT HUP INT TERM
-
-cat >"$TMPDIR/gc" <<'EOF'
-#!/bin/sh
-set -eu
-[ "$1" = bd ]
-case "$2" in
-    list) printf '%s\n' "$LEDGER_JSON" ;;
-    comment|close) printf '%s\n' "$*" >>"$GC_LOG" ;;
-    *) exit 64 ;;
-esac
-EOF
-chmod +x "$TMPDIR/gc"
+FAKE_DIR="$TMPDIR/store"
+mkdir -p "$FAKE_DIR"
+export FAKE_DIR
+cp "$ROOT/tests/fake-gc.sh" "$TMPDIR/gc"
 
 run() {
-    ledger=$1
-    shift
-    LEDGER_JSON="$ledger" GC_LOG="$LOG" GC_BIN="$TMPDIR/gc" GC_AGENT=mayor "$SCRIPT" "$@"
+    GC_BIN="$TMPDIR/gc" GC_AGENT=mayor "$SCRIPT" "$@"
 }
 
 expect_refusal() {
     expected=$1
-    ledger=$2
-    shift 2
-    if output=$(run "$ledger" "$@" 2>&1); then
+    shift
+    if output=$(run "$@" 2>&1); then
         echo "expected refusal, got success: $output" >&2
         exit 1
     fi
@@ -40,34 +28,27 @@ expect_refusal() {
     esac
 }
 
-MERGE_OPEN='[{"id":"d-merge","status":"open","labels":["firstmate-decision","decision-kind:merge"]}]'
-MERGE_CLOSED='[{"id":"d-merge","status":"closed","labels":["firstmate-decision","decision-kind:merge"]}]'
-APPROVE_OPEN='[{"id":"d-approve","status":"open","labels":["firstmate-decision","decision-kind:approve"]}]'
+BASE='{"title":"t","metadata":{},"comments":[]}'
+{
+    printf '[%s,\n' "$(printf '%s' "$BASE" | jq -c '. + {id:"d-approve",status:"open",labels:["firstmate-decision","decision-kind:approve"]}')"
+    printf '%s,\n' "$(printf '%s' "$BASE" | jq -c '. + {id:"d-closed",status:"closed",labels:["firstmate-decision","decision-kind:merge","decision-work:w-1"]}')"
+    printf '%s]\n' "$(printf '%s' "$BASE" | jq -c '. + {id:"d-nowork",status:"open",labels:["firstmate-decision","decision-kind:merge"]}')"
+} >"$FAKE_DIR/beads.json"
 
-expect_refusal 'not a decision in the ledger' '[]' missing --answer 'no' --outcome hold
-expect_refusal '--outcome is required' "$MERGE_OPEN" d-merge --answer 'hold it'
-expect_refusal '--outcome must be approve or hold' "$MERGE_OPEN" d-merge --answer 'merge it' --outcome later
-expect_refusal 'already resolved' "$MERGE_CLOSED" d-merge --answer 'merge it' --outcome approve
+expect_refusal 'not a decision in the ledger' missing --answer 'no' --outcome hold
+expect_refusal 'already resolved' d-closed --answer 'merge it' --outcome approve --captain trillium
+expect_refusal 'names no work bead' d-nowork --answer 'merge it' --outcome approve --captain trillium
+expect_refusal '--outcome applies only to merge decisions' d-approve --answer 'yes' --outcome approve
+expect_refusal '--captain applies only to merge decisions' d-approve --answer 'yes' --captain trillium
+expect_refusal '--answer is required' d-approve --answer ' '
 
-: >"$LOG"
-output=$(run "$MERGE_OPEN" d-merge --answer 'hold it' --outcome hold)
-case "$output" in
-    *'DECISION RESOLVED: d-merge'*'Recorded outcome: hold'*'Hold recorded: keep this change unlanded and stop.'*) ;;
-    *) echo "hold outcome was not recorded: $output" >&2; exit 1 ;;
-esac
-grep -F 'OUTCOME: hold' "$LOG" >/dev/null
-
-: >"$LOG"
-output=$(run "$MERGE_OPEN" d-merge --answer 'merge it' --outcome approve)
-case "$output" in
-    *'DECISION RESOLVED: d-merge'*'Recorded outcome: approve'*'Approval recorded: this exact change may proceed to landing.'*) ;;
-    *) echo "approve outcome was not recorded: $output" >&2; exit 1 ;;
-esac
-grep -F 'OUTCOME: approve' "$LOG" >/dev/null
-
-output=$(run "$APPROVE_OPEN" d-approve --answer 'yes')
+output=$(run d-approve --answer 'yes')
 case "$output" in
     *'DECISION RESOLVED: d-approve'*'Now act on it, and tell the captain what changed (outcome first).'*'Recorded outcome:'*) echo "non-merge resolution included outcome guidance: $output" >&2; exit 1 ;;
     *'DECISION RESOLVED: d-approve'*'Now act on it, and tell the captain what changed (outcome first).'*) ;;
     *) echo "non-merge resolution did not provide ordinary guidance: $output" >&2; exit 1 ;;
 esac
+jq -e 'map(select(.id == "d-approve")) | .[0] | .status == "closed" and (.comments | length == 1)' "$FAKE_DIR/beads.json" >/dev/null
+
+# Merge resolution (captain binding, work flag, live head) is covered end to
+# end in merge-gate-command.sh.

@@ -265,9 +265,9 @@ than printing the bare word `null` for you to misread as a recorded decision.
 - **Captain-facing decisions** (FIRSTMATE): anything that needs the captain's
   approval, a merge, or a pick is filed in the decision ledger BEFORE you ask
   (see "Decision Ledger" above). You decide everything else yourself.
-- **Merge ownership** (FIRSTMATE): the captain is the sole merge owner. The
+- **Merge ownership** (FIRSTMATE): the captain is the merge owner. The
   refinery must never merge autonomously. When a change is ready, file a
-  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }}` before messaging the captain. Record their answer with either `resolve --outcome approve` or `resolve --outcome hold`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded.
+  `merge` decision with `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }}` --blocks <work-bead-id> before messaging the captain. Record their answer with either `resolve --outcome approve --captain <captain-id>` or `resolve --outcome hold --captain <captain-id>`; only `approve` authorizes that exact change to land, while `hold` leaves it unlanded. The refinery lands only through the scripted `merge-gate`, which refuses without the recorded approval. It guards against mistakes and is not a security boundary (the captain id is not unforgeable), so never write the merge-authority flag yourself.
 
 **NOT your job**: Per-worker cleanup, session killing, routine nudging (Witness handles that)
 **Exception**: If refinery/witness is stuck, nudge the concrete rig-scoped session,
@@ -350,7 +350,7 @@ for, each one filed in the ledger first.
 | View convoy progress | `{{ cmd }} convoy status <id>` | |
 | Create issues | `gc bd create "title"` | ~~gc issue create~~ (not a command) |
 | Ask the captain to approve / merge / pick (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --kind ...` FIRST, then message | ~~asking in chat with nothing filed~~ |
-| Record the captain's answer (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <id> --answer "<their words>" --outcome approve` or `--outcome hold` for merge decisions | ~~acting on a chat reply without recording it~~ |
+| Record the captain's answer (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <id> --answer "<their words>" --outcome approve --captain <captain-id>` or `--outcome hold --captain <captain-id>` for merge decisions | ~~acting on a chat reply without recording it~~ |
 | Launch a read-only investigation (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} scout launch --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --question ... --key ... --report /abs/path` | ~~asking a polecat for "a quick look" with no report path~~ |
 | Mark a scout done (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} scout done <id>` (gate: report exists and is complete) | ~~relaying a result because the worker said it finished~~ |
 

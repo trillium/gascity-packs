@@ -45,11 +45,12 @@ Every decision carries all five. The command refuses a filing with any missing.
      --why-blocked "Only the captain approves a merge." \
      --artifact "https://github.com/org/repo/pull/12" \
      --stakes "Login stays broken for new users until merged; merge is revertable." \
-     [--blocks <work-bead-id>] [--rig <rig>]
+     --blocks <work-bead-id> [--rig <rig>]
    ```
 
    `--blocks` makes the work item depend on the decision so nothing picks it up
-   early. The command prints the filed record.
+   early. A `merge` decision requires it: the approval is bound to that one
+   work bead. The command prints the filed record.
 3. **Then message the captain, using the filed record.** Send the same five
    fields in plain words (see "Captain Communication"). Do not send a different
    or longer version of what you filed.
@@ -63,8 +64,11 @@ Every decision carries all five. The command refuses a filing with any missing.
    ```
 
    For a `merge` decision, this records the answer and an explicit `approve` or
-   `hold` outcome before closing it. Use `--outcome approve` to authorize that
-   exact change to land, or `--outcome hold` to keep it unlanded. A decision with no recorded answer is
+   `hold` outcome before closing it, and it also needs `--captain <captain-id>`,
+   the identity bound with `merge-gate bind-captain`. `approve` sets the merge
+   authority flag on that work bead, pinned to the PR head at that moment;
+   `hold` keeps it unlanded. The refinery can land only through
+   `merge-gate land`, which re-checks all of this live. A decision with no recorded answer is
    still open, even if the captain seemed to agree in passing. Never write an
    answer the captain did not give, and never resolve a decision with your own
    judgment.
