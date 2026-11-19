@@ -12,7 +12,7 @@ gc firstmate scout done ID [--rig RIG]
 
 | Subcommand | Who | What it does |
 |------------|-----|--------------|
-| `launch` | Mayor | Files a bead labeled `firstmate-scout`, `scout-key:<key>`; its description holds QUESTION and REPORT (the absolute report path). Prints the formula launch line. Idempotent on `--key`. |
+| `launch` | Mayor | Takes a single-line `--question` (CR/LF rejected). Files a bead labeled `firstmate-scout`, `scout-key:<key>`; its description holds QUESTION and REPORT (the absolute report path). Prints the formula launch line. Idempotent on `--key`. |
 | `report` | Scout | Checks the file exists, is not blank, and has the sections `## Question`, `## Findings`, `## Evidence`, `## Not verified`; then labels the bead `scout-report-submitted`. |
 | `done` | Mayor | Runs the gate, then closes the bead with the report path as the reason. Refuses if the gate fails. |
 
