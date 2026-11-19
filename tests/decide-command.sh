@@ -66,22 +66,22 @@ expect_unowned_refusal() {
 }
 
 expect_refusal '--key is required' \
-    --kind merge --what 'Merge the login fix?' --you-do 'Open the linked change.' \
+    --kind merge --blocks work-1 --what 'Merge the login fix?' --you-do 'Open the linked change.' \
     --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' \
     --stakes 'The fix remains unavailable.'
 
 expect_unowned_refusal \
-    --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+    --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
 expect_refusal 'STAKES is required' \
-    --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+    --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes ''
 
 expect_refusal 'must end with a question mark' \
-    --kind merge --key merge-login-fix --what 'Merge the login fix' \
+    --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
@@ -91,17 +91,17 @@ expect_refusal '--kind must be approve, merge, or pick' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
 expect_refusal 'ARTIFACT must be a full URL or path' \
-    --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+    --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact '#12' --stakes 'The fix remains unavailable.'
 
 expect_refusal '--binding must be a non-empty plain identifier' \
-    --kind merge --key merge-login-fix --binding 'bad;binding' --what 'Merge the login fix?' \
+    --kind merge --blocks work-1 --key merge-login-fix --binding 'bad;binding' --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
 expect_refusal 'full https URL' \
-    --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+    --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the PR and merge it.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.'
 
@@ -109,11 +109,11 @@ expect_malformed_pr_refusal() {
     field=$1
     value=$2
     case "$field" in
-        what) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what "$value?" --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do "$value" --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked "$value" --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact "$value" --stakes 'The fix remains unavailable.' ;;
-        stakes) expect_refusal 'full https URL' --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes "$value" ;;
+        what) expect_refusal 'full https URL' --kind merge --blocks work-1 --key merge-login-fix --what "$value?" --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) expect_refusal 'full https URL' --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do "$value" --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) expect_refusal 'full https URL' --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked "$value" --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) expect_refusal 'full https URL' --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact "$value" --stakes 'The fix remains unavailable.' ;;
+        stakes) expect_refusal 'full https URL' --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes "$value" ;;
     esac
 }
 
@@ -125,11 +125,11 @@ done
 
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Pull request #12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR #12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request #12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'Pull request #12' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Pull request #12 remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Pull request #12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR #12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request #12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'Pull request #12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Pull request #12 remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
@@ -137,38 +137,38 @@ done
 # Punctuation around repository shorthand does not turn it into a full URL.
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Merge trillium/gascity-packs#12!?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open trillium/gascity-packs#12!' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'trillium/gascity-packs#12; needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact '(trillium/gascity-packs#12)' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'trillium/gascity-packs#12! remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge trillium/gascity-packs#12!?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open trillium/gascity-packs#12!' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'trillium/gascity-packs#12; needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact '(trillium/gascity-packs#12)' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'trillium/gascity-packs#12! remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
 
-expect_filed --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+expect_filed --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12#issuecomment-1' \
     --stakes 'The fix remains unavailable.'
 
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Review PR: 13 and https://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review PR: 13 and https://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review PR: 13 and https://github.com/org/repo/pull/12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'Review PR: 13 and https://github.com/org/repo/pull/12.' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review PR: 13 and https://github.com/org/repo/pull/12 remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Review PR: 13 and https://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review PR: 13 and https://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review PR: 13 and https://github.com/org/repo/pull/12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'Review PR: 13 and https://github.com/org/repo/pull/12.' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review PR: 13 and https://github.com/org/repo/pull/12 remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
 
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Review https://docs.example.com/runbook/#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review https://docs.example.com/runbook/#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review https://docs.example.com/runbook/#12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://docs.example.com/runbook/#12' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review https://docs.example.com/runbook/#12 remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Review https://docs.example.com/runbook/#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Review https://docs.example.com/runbook/#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Review https://docs.example.com/runbook/#12.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://docs.example.com/runbook/#12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'Review https://docs.example.com/runbook/#12 remains unavailable.' ;;
     esac
     expect_filed "$@"
 done
@@ -176,11 +176,11 @@ done
 # A PR label directly followed by a full https URL is a valid reference.
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Merge PR: https://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR https://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request: https://github.com/org/repo/pull/12 is waiting.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'PR: https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'PR https://github.com/org/repo/pull/12 stays unmerged.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge PR: https://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR https://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request: https://github.com/org/repo/pull/12 is waiting.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'PR: https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'PR https://github.com/org/repo/pull/12 stays unmerged.' ;;
     esac
     expect_filed "$@"
 done
@@ -188,38 +188,38 @@ done
 # A bare PR reference is still refused even with a valid https artifact elsewhere.
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Merge PR 13?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR 13.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request 13 is waiting.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'PR 13' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'PR 13 stays unmerged.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge PR 13?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open PR 13.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Pull request 13 is waiting.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'PR 13' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'PR 13 stays unmerged.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
 
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Merge trillium/gascity-packs#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open trillium/gascity-packs#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'trillium/gascity-packs#12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'trillium/gascity-packs#12' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'trillium/gascity-packs#12 remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge trillium/gascity-packs#12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open trillium/gascity-packs#12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'trillium/gascity-packs#12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'trillium/gascity-packs#12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'trillium/gascity-packs#12 remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
 
 for field in what you-do why-blocked artifact stakes; do
     case "$field" in
-        what) set -- --kind merge --key merge-login-fix --what 'Review http://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        you-do) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open http://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        why-blocked) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'http://github.com/org/repo/pull/12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        artifact) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'http://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
-        stakes) set -- --kind merge --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'http://github.com/org/repo/pull/12 remains unavailable.' ;;
+        what) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Review http://github.com/org/repo/pull/12?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        you-do) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open http://github.com/org/repo/pull/12.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        why-blocked) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'http://github.com/org/repo/pull/12 needs the captain.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        artifact) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'http://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.' ;;
+        stakes) set -- --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' --artifact 'https://github.com/org/repo/pull/12' --stakes 'http://github.com/org/repo/pull/12 remains unavailable.' ;;
     esac
     expect_refusal 'full https URL' "$@"
 done
 
-output=$(run --kind merge --key merge-login-fix --binding helm --what 'Merge the login fix?' \
+output=$(run --kind merge --blocks work-1 --key merge-login-fix --binding helm --what 'Merge the login fix?' \
     --you-do 'Open the linked change and merge it.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' \
     --stakes 'The fix remains unavailable until the captain merges it.')
@@ -238,7 +238,7 @@ case "$output" in
 esac
 
 duplicate='[{"id":"d-existing","status":"open","labels":["firstmate-decision","decision-key:merge-login-fix"]}]'
-output=$(run_with_ledger "$duplicate" --kind merge --key merge-login-fix --what 'Merge the login fix?' \
+output=$(run_with_ledger "$duplicate" --kind merge --blocks work-1 --key merge-login-fix --what 'Merge the login fix?' \
     --you-do 'Open the linked change.' --why-blocked 'Only the captain merges.' \
     --artifact 'https://github.com/org/repo/pull/12' --stakes 'The fix remains unavailable.')
 case "$output" in
@@ -247,4 +247,5 @@ case "$output" in
 esac
 
 "$ROOT/tests/resolve-command.sh"
+"$ROOT/tests/merge-gate-command.sh"
 "$ROOT/tests/render-prompts.sh"

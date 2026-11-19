@@ -1,0 +1,83 @@
+description = """
+Read-only scout: investigate a question and end in a report.
+
+A scout's deliverable is a report, not a change. It never writes to the project
+it studies, never opens a PR and never merges. The one file it may write is the
+report at {{report}}. The work is not done until `gc firstmate scout done`
+passes the completion gate, which checks that the report exists and has every
+required section.
+"""
+formula = "scout"
+version = 2
+
+[vars]
+[vars.bead]
+description = "The scout bead ID filed by `gc firstmate scout launch`"
+required = true
+
+[vars.question]
+description = "The question to investigate, in one plain sentence"
+required = true
+
+[vars.report]
+description = "Absolute path of the report file (the only file the scout may write)"
+required = true
+
+[vars.binding]
+description = "Import binding name of the firstmate pack"
+default = "firstmate"
+
+[[steps]]
+id = "load-context"
+title = "Load context and restate the question"
+description = """
+```bash
+gc prime
+gc bd show {{bead}}
+```
+
+Restate the question in your own words. If it cannot be answered by reading,
+say so in the report instead of widening scope.
+"""
+
+[[steps]]
+id = "investigate"
+title = "Investigate read-only"
+needs = ["load-context"]
+description = """
+Read code, docs, logs, and command output to answer: {{question}}
+
+Read-only means: no edits, commits, branches, pushes, PRs, merges, installs, or
+state-changing commands in the project under study. The only file you may
+create or change is {{report}}. Note every source you read as you go.
+"""
+
+[[steps]]
+id = "write-report"
+title = "Write the report"
+needs = ["investigate"]
+description = """
+Write {{report}} in Markdown with exactly these second-level sections:
+
+- `## Question`: the question, as asked.
+- `## Findings`: the answer, outcome first, in plain words.
+- `## Evidence`: files, commands, and outputs that back each finding.
+- `## Not verified`: what you could not check, and why. Write `Nothing.` only
+  if that is true.
+
+Mention PRs only as full https URLs.
+"""
+
+[[steps]]
+id = "submit-report"
+title = "Submit the report"
+needs = ["write-report"]
+description = """
+```bash
+gc {{binding}} scout report {{bead}} --file {{report}}
+```
+
+The command refuses a missing, blank, or incomplete report. Fix the report and
+run it again. Do not close the bead yourself: closing is the completion gate's
+job (`gc {{binding}} scout done {{bead}}`), run by the Mayor.
+"""
