@@ -6,12 +6,14 @@ Mayor lacks. Those are a communication contract for talking to the human (the
 "captain") and a durable decision ledger.
 
 Everything else is gastown: deacon, boot, witness, refinery, polecats,
-formulas, orders. The refinery prompt tells it to hold a change until its
-exact merge decision records the captain's `approve` outcome. This is
-prompt-level guidance, not tamper-proof enforcement.
+formulas, orders. A change lands only through `merge-gate land`, a script that
+re-reads live state and refuses unless the bound captain approved that exact
+work bead at its current head. It is a script gate the refinery is told to
+use, not a sandbox: see [Verified vs unverified](#verified-vs-unverified).
 
-> **Status: v0.1.0.** The files parse and the scripts pass `shellcheck`. The
-> decision commands were exercised against a stand-in for `gc bd`, and the
+> **Status: v0.2.0.** The files parse and the scripts pass `shellcheck`. The
+> decision and merge-gate commands were exercised against a stand-in for
+> `gc bd` and `gh`, and the
 > prompt templates render. A live import passed `config-valid` with Gas City
 > `0.15.1.trillium`, but that version did not dispatch the imported commands.
 > See [Verified vs unverified](#verified-vs-unverified).
@@ -32,16 +34,15 @@ Things to do by hand (all but the import check are **unverified**, see below):
 
 1. **Import firstmate instead of gastown, not alongside it.** firstmate
    already imports gastown. Importing both would give you two of every role.
-2. **Set merge ownership before attaching any rig.** The refinery prompt says
-   the captain is the sole merge owner: when a change is ready to land, it
-   tells the refinery to stop and file a `merge` decision with `gc firstmate
-   decide`. It tells the refinery to resume only when a resolved decision for
-   that exact change has the captain's recorded `approve` outcome; `hold`
-   keeps it unlanded. The captain decides approve or hold; the refinery performs
-   the merge only after an approve for that exact change. This v0 rail is not
-   enforced against a refinery or other caller that skips the prompt: `resolve`
-   does not verify who the caller is or bind an approval to one specific work
-   item.
+2. **Bind the captain, then set merge ownership, before attaching any rig.**
+   Run `gc firstmate merge-gate bind-captain --id <your-id>` once. The refinery
+   prompt makes the captain the sole merge owner: it must land only through
+   `gc firstmate merge-gate land <work-bead> -- <landing command>`, which runs
+   the live checks first. When a change is ready it files a `merge` decision
+   (`decide --blocks <work-bead>`); you answer, and the Mayor records it with
+   `resolve --outcome approve|hold --captain <your-id>`. `approve` sets a
+   `merge_authority` flag on that one work bead, pinned to the PR head at that
+   moment; `hold` keeps it unlanded. See [Merge gate](#3-merge-gate-commandsmerge-gate).
    Publishing a PR, closing a bead, and recording handoffs remain governed by
    the ordinary refinery workflow, so the captain can inspect the PR URL first.
 3. **Give rigs the import too.** Rig-scoped roles (witness, refinery, polecat)
@@ -90,10 +91,11 @@ gc firstmate decide --kind merge --key pr-login-fix --binding firstmate \
   --you-do "Open the linked change and reply 'approve' to let it land, or 'hold'." \
   --why-blocked "Only the captain approves a merge." \
   --artifact "https://github.com/org/repo/pull/12" \
-  --stakes "Login stays broken for new users until merged; merge is revertable."
+  --stakes "Login stays broken for new users until merged; merge is revertable." \
+  --blocks work-login-fix
 
 gc firstmate decide list            # what is waiting on the captain
-gc firstmate resolve <id> --answer "merge it" --outcome approve   # record approval and close
+gc firstmate resolve <id> --answer "approve" --outcome approve --captain <id>   # record approval and close
 ```
 
 - The bead carries labels `firstmate-decision`, `decision-kind:<kind>` and
@@ -106,16 +108,40 @@ gc firstmate resolve <id> --answer "merge it" --outcome approve   # record appro
   must be a full HTTPS URL.
 - `--key` is required and makes filing idempotent: an open decision with the
   same key is returned instead of filed twice.
-- `--blocks <work-bead>` makes the work depend on the decision.
+- `--blocks <work-bead>` makes the work depend on the decision. It is required
+  for a `merge` decision, which it binds to that one work bead.
 - `--binding <import-binding>` controls the resolve hint printed after filing;
   it defaults to `firstmate` and must be a plain identifier.
 - `resolve` records the answer as a comment first, then closes. A `merge`
-  decision also requires either `--outcome approve` or `--outcome hold`; an
-  `approve` outcome tells the refinery that exact change may land, while
-  `hold` tells it to keep the change unlanded. This is a recorded prompt-level
-  policy: `resolve` does not verify who supplied the answer or bind approval to
-  one specific work item. It refuses ids that are not ledger decisions or are
-  already resolved, and it matches ids exactly (plain `gc bd` fuzzy-matches).
+  decision also requires `--outcome approve|hold` and `--captain <id>` (the
+  bound captain); see the merge gate below. It refuses ids that are not ledger
+  decisions or are already resolved, and it matches ids exactly (plain `gc bd`
+  fuzzy-matches).
+
+### 3. Merge gate (`commands/merge-gate`)
+
+Three parts, enforced by script rather than prompt advice alone:
+
+- **Bound captain identity.** `merge-gate bind-captain --id X` records the
+  captain once (a bead labeled `firstmate-captain`); it refuses to rebind.
+  `resolve` on a merge decision is refused unless `--captain` equals it, and
+  refused outright while none is bound.
+- **Per-work-bead merge-authority flag.** `resolve --outcome approve` sets
+  `merge_authority=approved` on the decision's work bead, with
+  `merge_authority_decision`, `merge_authority_captain` and
+  `merge_authority_head` (the PR head at approval). `hold` sets `held`;
+  `merge-gate revoke` sets `revoked`. A decision authorizes only the work bead
+  it was filed `--blocks`, so approving one change cannot land another.
+- **Live precondition script.** `merge-gate check <work-bead>` exits 0 only if,
+  right now: a captain is bound; the work bead is open and flagged `approved`
+  by that captain; its decision is resolved, is a merge decision for this work
+  bead, and its comments record the approve outcome, captain, work bead and
+  head (and no hold); and the live PR (via `gh pr view`) is open, not a draft,
+  has no failing or pending check, and is still at the approved head. A change
+  pushed after approval needs a new approval. Any unreadable input is a
+  refusal. `merge-gate land <work-bead> -- <cmd>` runs `check`, then `<cmd>`.
+
+The refinery prompt requires every landing action to go through `land`.
 
 ## Design
 
@@ -180,6 +206,7 @@ and private files under `assets/`. No `[[agent]]`, `[formulas].dir`, top-level
 firstmate/
 ├── pack.toml
 ├── README.md
+├── assets/lib/gate-lib.sh
 ├── assets/prompts/mayor.template.md
 ├── assets/prompts/refinery.template.md
 ├── template-fragments/
@@ -187,7 +214,8 @@ firstmate/
 │   └── firstmate-decision-ledger.template.md
 └── commands/
     ├── decide/{run.sh,help.md}
-    └── resolve/{run.sh,help.md}
+    ├── resolve/{run.sh,help.md}
+    └── merge-gate/{run.sh,help.md}
 ```
 
 ### Roadmap layout: where scouts drop in
@@ -216,8 +244,14 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   fragments at the pinned commit.
 - `decide` and `resolve` behave as documented against a stand-in for `gc bd`:
   missing field, bad kind, malformed question, bare-number artifact, duplicate
-  key, unknown id, double resolve, missing or invalid merge outcome, hold and
-  approve outcomes, unowned caller.
+  key, merge decision without `--blocks`, unknown id, double resolve, missing
+  or invalid merge outcome, missing or wrong `--captain`, no captain bound,
+  hold and approve outcomes, unowned caller.
+- `merge-gate` behaves as documented against a stateful stand-in for `gc bd`
+  and a stand-in `gh`/`git`: no captain, no approval, approval for a different
+  work bead, a flag with no decision behind it, a tampered captain, a PR that
+  moved, became a draft, failed checks or closed, unreadable live state,
+  `land` refusing to start its command, revoke, hold, and branch-only work.
 - In a disposable live Gas City `0.15.1.trillium` city, importing firstmate
   under the custom `helm` binding passed `config-valid`.
 
@@ -225,11 +259,16 @@ Nothing in `pack.toml` has to change for the formula and command to load.
 
 - That the patches find `mayor` and `refinery` and swap their prompts at
   runtime.
-- The captain-only merge rail is prompt-level guidance to the refinery, not
-  tamper-proof enforcement. It is not enforced against a refinery or any other
-  caller that skips it; `resolve` does not verify the caller or bind an
-  approval to one specific work item. The prompt rule is statically rendered
-  and checked, but runtime enforcement has never run in a live city.
+- Whether the real refinery actually routes its landing through
+  `merge-gate land`. The prompt requires it and is statically rendered and
+  checked, but no live city has run it. A caller that never calls `land`, or
+  that runs `git push` or `gh pr merge` directly, is not stopped by this pack:
+  it is a script gate the refinery is told to use, not a sandbox.
+- Identity is a bound string, not authentication. Any agent with the `gc` CLI
+  can run `resolve --captain <id>` or write bead metadata directly. The gate
+  catches wrong or missing identity, a flag with no matching resolved decision,
+  a different work bead, and a moved head; it cannot prove a human typed the
+  answer. Proof of authorship remains a gap (see below).
 - That `prompt_template` resolves correctly when the pack sits in Gas City's
   remote-import cache rather than the city directory.
 - The re-stamping of gastown roles as `firstmate.<name>`, the need for
@@ -241,9 +280,12 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   therefore unverified that commands appear as `gc <binding> <command>` with
   the environment the scripts expect (`GC_BIN`, `GC_AGENT`, `GC_RIG`) on a
   version where dispatch works.
-- The real `gc bd` / `bd` behavior the scripts rely on: the flags
+- The real `gc bd` / `bd` / `gh` behavior the scripts rely on: the flags
   `create --silent --description --labels --deps blocks:<id>`,
-  `list --label --all --json --limit 0`, `comment`, `close --reason`; `--rig=`
+  `list --label --all --json --limit 0`, `show <id> --json` (an array whose
+  element has `metadata`), `update <id> --set-metadata k=v` (repeatable),
+  `comment`, `comments <id> --json`, `close --reason`, and
+  `gh pr view --json state,isDraft,headRefOid,statusCheckRollup`; `--rig=`
   being accepted on those subcommands; and that `list --json` rows expose
   `id`, `status`, `title` and `created_at`. Misreads here fail closed (the
   commands refuse and print why), but they would make the ledger unusable.
@@ -265,10 +307,6 @@ These are known gaps, left for later:
   guards filing, not authority.
 - **Refuse-on-unlanded teardown.** Refusing to tear down a worker's workspace
   while it holds uncommitted or unmerged work.
-- **Scripted merge gate (v0.1).** One merge script that reads live
-  preconditions, binds the captain's identity, and records a persisted
-  per-work-item merge-authority flag. v0 has only the refinery prompt-level
-  rail.
 - **Scouts: the Mayor launching read-only workers.** A scout is a worker whose
   deliverable is a **report, not a PR**, and which never writes to the project
   it studies. The Mayor must be able to launch one, and **may not relay a
@@ -279,10 +317,10 @@ These are known gaps, left for later:
   fragment; the files go in the places shown under
   [Roadmap layout](#roadmap-layout-where-scouts-drop-in), so nothing in v0
   needs restructuring.
-- **Proof that the answer came from the captain.** `resolve` records whatever
-  `--answer` it is given; it neither verifies the caller nor binds an approval
-  to a specific work item. v0 relies on the prompt rule that it be the
-  captain's own words.
+- **Proof that the answer came from the captain.** `resolve` binds an
+  approval to the captain's id and one work bead, but cannot verify that the
+  caller is that person; `--answer` is whatever it is given. The prompt rule
+  that it be the captain's own words still applies.
 
 ## License and upstream
 

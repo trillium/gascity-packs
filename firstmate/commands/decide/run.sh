@@ -156,6 +156,14 @@ done
 
 [ -n "$KEY" ] || die "--key is required; every decision needs a stable key"
 
+# A merge decision authorizes exactly one work bead, so it must name it.
+if [ "$KIND" = merge ] && [ -z "$BLOCKS" ]; then
+    die "--blocks WORK_BEAD_ID is required for a merge decision (it binds the approval to that one work bead)"
+fi
+case "$BLOCKS" in
+    *[!A-Za-z0-9._-]*) die "--blocks must be a plain work bead id" ;;
+esac
+
 # ARTIFACT must be something the captain can open, not a bare number.
 if printf '%s' "$ARTIFACT" | grep -Eq '^[[:space:]]*#?[0-9]+[[:space:]]*$'; then
     die "ARTIFACT must be a full URL or path, not a bare number ('$ARTIFACT')"
@@ -197,6 +205,7 @@ body=$(printf 'WHAT: %s\nWHAT YOU DO: %s\nWHY BLOCKED: %s\nARTIFACT: %s\nSTAKES:
 
 labels="$LABEL,decision-kind:$KIND"
 labels="$labels,decision-key:$KEY"
+[ -z "$BLOCKS" ] || labels="$labels,decision-work:$BLOCKS"
 
 if [ -n "$BLOCKS" ]; then
     id=$(gcbd create "$title" --description "$body" --labels "$labels" \
@@ -225,8 +234,8 @@ EOF
 if [ "$KIND" = merge ]; then
     cat <<EOF
 When they answer, record one of these exact outcomes:
-  gc $BINDING resolve $id --answer "<their words>" --outcome approve
-  gc $BINDING resolve $id --answer "<their words>" --outcome hold
+  gc $BINDING resolve $id --answer "<their words>" --outcome approve --captain <captain-id>
+  gc $BINDING resolve $id --answer "<their words>" --outcome hold --captain <captain-id>
 EOF
 else
     cat <<EOF
