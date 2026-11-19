@@ -33,6 +33,10 @@
 
 ---
 
+{{ template "firstmate-scouts" . }}
+
+---
+
 ## Work Philosophy: Dispatch Liberally, Fix When Fast
 
 The Mayor is a coordinator first — but Gas Town works in single-player mode too.
@@ -347,6 +351,8 @@ for, each one filed in the ledger first.
 | Create issues | `gc bd create "title"` | ~~gc issue create~~ (not a command) |
 | Ask the captain to approve / merge / pick (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} decide --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --kind ...` FIRST, then message | ~~asking in chat with nothing filed~~ |
 | Record the captain's answer (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} resolve <id> --answer "<their words>" --outcome approve` or `--outcome hold` for merge decisions | ~~acting on a chat reply without recording it~~ |
+| Launch a read-only investigation (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} scout launch --binding {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} --question ... --key ... --report /abs/path` | ~~asking a polecat for "a quick look" with no report path~~ |
+| Mark a scout done (FIRSTMATE) | `{{ cmd }} {{ if .BindingName }}{{ .BindingName }}{{ else }}firstmate{{ end }} scout done <id>` (gate: report exists and is complete) | ~~relaying a result because the worker said it finished~~ |
 
 
 Town root: {{ .CityRoot }}

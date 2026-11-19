@@ -74,6 +74,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits merge outcome authority")
 			os.Exit(1)
 		}
+		if !strings.Contains(mayor, "gc "+binding+" scout launch --binding "+binding) || !strings.Contains(mayor, "gc "+binding+" scout done ID") || !strings.Contains(mayor, "You may not relay a scout's result to the captain") {
+			fmt.Fprintln(os.Stderr, "rendered Mayor prompt omits the scout launch command or completion gate")
+			os.Exit(1)
+		}
 		if !strings.Contains(refinery, "target branch unless a resolved `merge` decision has outcome `approve` for that\nexact change") || !strings.Contains(refinery, "hold`, keep the change unlanded and stop") {
 			fmt.Fprintln(os.Stderr, "rendered refinery prompt omits the ledger gate")
 			os.Exit(1)

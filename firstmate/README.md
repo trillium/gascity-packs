@@ -117,6 +117,36 @@ gc firstmate resolve <id> --answer "merge it" --outcome approve   # record appro
   one specific work item. It refuses ids that are not ledger decisions or are
   already resolved, and it matches ids exactly (plain `gc bd` fuzzy-matches).
 
+### 3. Scouts (`formulas/scout.toml`, `commands/scout`)
+
+A scout is a worker whose deliverable is a **report, not a PR**. It never
+writes to the project it studies; the one file it writes is its report. The
+Mayor launches it, and **may not relay its result to the captain or call it
+done until a completion gate passes**.
+
+```bash
+gc firstmate scout launch --key why-slow --report /abs/path/why-slow.md \
+  --question "Why is the nightly build slow?"   # files the scout bead, prints the launch line
+# the scout (formula `scout`) investigates read-only, writes the report, then:
+gc firstmate scout report <id> --file /abs/path/why-slow.md
+gc firstmate scout done <id>                    # gate: prints SCOUT GATE PASSED and closes
+gc firstmate scout check <id>                   # the same gate, read-only
+```
+
+- The bead carries labels `firstmate-scout` and `scout-key:<key>`; its
+  description holds QUESTION and REPORT (an absolute path). `--key` makes
+  launching idempotent.
+- The report must have the sections `## Question`, `## Findings`,
+  `## Evidence`, `## Not verified`. `report` refuses a missing, blank, or
+  incomplete file and only then labels the bead `scout-report-submitted`.
+- The gate (`check`, and `done`, which closes only after it) needs that label
+  **and** re-reads the file, so a stale label or a deleted report does not pass.
+- The Mayor prompt (`template-fragments/firstmate-scouts.template.md`) carries
+  the rule that no result is relayed before `SCOUT GATE PASSED`.
+- "Read-only" is a rule in the formula and the Mayor prompt. It is not an
+  enforced sandbox, and the gate checks the report, not that nothing else was
+  written.
+
 ## Design
 
 ### Patch, not a full agent
@@ -182,28 +212,16 @@ firstmate/
 ├── README.md
 ├── assets/prompts/mayor.template.md
 ├── assets/prompts/refinery.template.md
+├── formulas/scout.toml
 ├── template-fragments/
 │   ├── firstmate-communication.template.md
-│   └── firstmate-decision-ledger.template.md
+│   ├── firstmate-decision-ledger.template.md
+│   └── firstmate-scouts.template.md
 └── commands/
-    ├── decide/{run.sh,help.md}
-    └── resolve/{run.sh,help.md}
+    ├── decide/{command.toml,run.sh,help.md}
+    ├── resolve/{command.toml,run.sh,help.md}
+    └── scout/{command.toml,run.sh,help.md}
 ```
-
-### Roadmap layout: where scouts drop in
-
-The layout leaves room for scouts (see "Deliberately not in v0") without moving
-anything. Each addition is a new file or directory in a conventional location:
-
-```text
-firstmate/
-├── formulas/scout.toml                     # the scout formula (no [formulas].dir needed)
-├── commands/scout/{run.sh,help.md}         # gc firstmate scout ...: launch, check, relay
-└── template-fragments/firstmate-scouts.template.md   # Mayor rules for scouts,
-                                            # pulled into assets/prompts/mayor.template.md
-```
-
-Nothing in `pack.toml` has to change for the formula and command to load.
 
 ## Verified vs unverified
 
@@ -218,6 +236,12 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   missing field, bad kind, malformed question, bare-number artifact, duplicate
   key, unknown id, double resolve, missing or invalid merge outcome, hold and
   approve outcomes, unowned caller.
+- `scout` behaves as documented against a stand-in for `gc bd`: launch
+  validation and idempotent key, report refusals (unknown id, wrong path,
+  missing, blank, missing section, closed), gate failures and pass, `done`
+  closing only after the gate; `formulas/scout.toml` parses with the expected
+  steps and required vars; the Mayor prompt renders the scout rule and commands
+  with and without a binding name.
 - In a disposable live Gas City `0.15.1.trillium` city, importing firstmate
   under the custom `helm` binding passed `config-valid`.
 
@@ -249,6 +273,12 @@ Nothing in `pack.toml` has to change for the formula and command to load.
   commands refuse and print why), but they would make the ledger unusable.
 - Whether `--deps blocks:<id>` works when the work bead lives in a different
   rig's store.
+- Scouts, all unverified live: that `formulas/scout.toml` is discovered
+  without a `[formulas].dir`; the exact `gc sling ... --formula scout --var ...`
+  syntax printed by `scout launch`; that `gc bd update --add-label` and
+  `gc bd comment` behave as the script assumes; that a launched worker follows
+  the read-only rule; and the end-to-end Mayor flow (launch, report, gate,
+  relay). The gate is prompt-level guidance, like the merge rail.
 
 Prove these in a throwaway city before depending on the pack.
 
@@ -269,16 +299,6 @@ These are known gaps, left for later:
   preconditions, binds the captain's identity, and records a persisted
   per-work-item merge-authority flag. v0 has only the refinery prompt-level
   rail.
-- **Scouts: the Mayor launching read-only workers.** A scout is a worker whose
-  deliverable is a **report, not a PR**, and which never writes to the project
-  it studies. The Mayor must be able to launch one, and **may not relay a
-  scout's result to the captain until a completion gate passes** (the report
-  exists and was checked, not just a status line saying so). This is a
-  roadmap item for a later version, not part of v0. It will arrive as a
-  `scout` formula, a `gc firstmate scout` command and a Mayor-prompt
-  fragment; the files go in the places shown under
-  [Roadmap layout](#roadmap-layout-where-scouts-drop-in), so nothing in v0
-  needs restructuring.
 - **Proof that the answer came from the captain.** `resolve` records whatever
   `--answer` it is given; it neither verifies the caller nor binds an approval
   to a specific work item. v0 relies on the prompt rule that it be the
